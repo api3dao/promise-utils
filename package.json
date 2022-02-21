@@ -1,0 +1,7 @@
+{
+  "name": "promise-utils",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:api3dao/promise-utils",
+  "license": "MIT"
+}
