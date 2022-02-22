@@ -47,3 +47,11 @@ export const go = async <T, E extends Error>(fn: Promise<T> | (() => Promise<T>)
     return createError(err);
   }
 };
+
+// NOTE: This needs to be written using 'function' syntax (cannot be arrow function)
+// See: https://github.com/microsoft/TypeScript/issues/34523#issuecomment-542978853
+export function assertGoSuccess<T>(result: GoResult<T>): asserts result is GoResultSuccess<T> {
+  if (result[0]) {
+    throw result[0];
+  }
+}

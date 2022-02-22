@@ -1,4 +1,4 @@
-import { go, goSync, success, fail } from './index';
+import { go, goSync, success, fail, assertGoSuccess } from './index';
 import { assertType, Equal } from 'type-plus';
 
 describe('basic goSync usage', () => {
@@ -200,4 +200,14 @@ describe('custom error type', () => {
       expectReadPropertyOfUndefined(res, '_async');
     });
   });
+});
+
+it('assertGoSuccess works', () => {
+  const res = goSync(() => 123);
+
+  assertGoSuccess(res);
+
+  // Data property should now be inferred since the success was asserted
+  const data = res.data;
+  expect(data).toBe(data);
 });
