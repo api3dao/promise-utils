@@ -1,15 +1,14 @@
 {
   "compilerOptions": {
-    "target": "es5",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
     "exactOptionalPropertyTypes": true,
     "noFallthroughCasesInSwitch": true,
     "isolatedModules": true,
     "noEmit": true,
     "esModuleInterop": true
   },
-  "include": ["src"],
-  "exclude": ["src/**/*.test.ts"]
+  "include": ["src"]
 }
