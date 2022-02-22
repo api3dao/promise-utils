@@ -156,4 +156,39 @@ describe('custom error type', () => {
       expect(err instanceof Error).toBe(true);
     });
   });
+
+  describe('the "this" limitation', () => {
+    class Test {
+      constructor() {}
+      sync() {
+        return this._sync();
+      }
+      _sync() {
+        return '123';
+      }
+
+      async() {
+        return this._async();
+      }
+      _async() {
+        return Promise.resolve('123');
+      }
+    }
+
+    it('fails for sync version', () => {
+      const test = new Test();
+
+      const res = goSync(test.sync);
+
+      expect(res).toEqual(fail(new TypeError("Cannot read property '_sync' of undefined")));
+    });
+
+    it('fails for async version', async () => {
+      const test = new Test();
+
+      const res = await go(test.async);
+
+      expect(res).toEqual(fail(new TypeError("Cannot read property '_async' of undefined")));
+    });
+  });
 });
