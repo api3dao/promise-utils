@@ -1,6 +1,7 @@
 import { go, goSync, success, fail } from './index';
+import { assertType, Equal } from 'type-plus';
 
-describe('goSync', () => {
+describe('basic goSync usage', () => {
   it('resolves successful synchronous functions', () => {
     const res = goSync(() => 2 + 2);
     expect(res).toEqual(success(4));
@@ -15,7 +16,7 @@ describe('goSync', () => {
   });
 });
 
-describe('go', () => {
+describe('basic go usage', () => {
   it('resolves successful asynchronous functions', async () => {
     const successFn = new Promise((res) => res(2));
     const res = await go(successFn);
@@ -49,5 +50,110 @@ describe('go', () => {
   it('throws on sync usage without callback', async () => {
     const obj = {} as any;
     expect(() => go(obj.nonExistingFunction())).toThrow(new TypeError('obj.nonExistingFunction is not a function'));
+  });
+
+  it('accepts a sync function if the return type is never', async () => {
+    const err = new Error('asd');
+    const res = await go(() => {
+      throw err;
+    });
+    expect(res).toEqual(fail(err));
+  });
+});
+
+describe('custom error type', () => {
+  class CustomError extends Error {
+    custom: string;
+
+    constructor(message: string) {
+      super(message);
+      this.custom = '123';
+    }
+  }
+
+  describe('goSync', () => {
+    it('error handling', () => {
+      const [err] = goSync(() => {
+        throw new CustomError('custom');
+      });
+      if (!err) {
+        expect(err).not.toBeNull();
+        return;
+      }
+
+      assertType<Error>(err);
+      // Check that "err" is not assignable to CustomError
+      assertType.isFalse(false as Equal<CustomError, typeof err>);
+      expect(err instanceof CustomError).toBe(true);
+    });
+
+    it('can specify custom error type', () => {
+      const [err] = goSync<never, CustomError>(() => {
+        throw new CustomError('custom');
+      });
+      if (!err) {
+        expect(err).not.toBeNull();
+        return;
+      }
+
+      assertType<CustomError>(err);
+      expect(err instanceof CustomError).toBe(true);
+    });
+
+    it('will wraps non error throw in Error class', () => {
+      const [err] = goSync(() => {
+        throw 'string-error';
+      });
+      if (!err) {
+        expect(err).not.toBeNull();
+        return;
+      }
+
+      assertType<Error>(err);
+      expect(err instanceof Error).toBe(true);
+    });
+  });
+
+  describe('go', () => {
+    it('error handling', async () => {
+      const [err] = await go(() => {
+        throw new CustomError('custom');
+      });
+      if (!err) {
+        expect(err).not.toBeNull();
+        return;
+      }
+
+      assertType<Error>(err);
+      // Check that "err" is not assignable to CustomError
+      assertType.isFalse(false as Equal<CustomError, typeof err>);
+      expect(err instanceof CustomError).toBe(true);
+    });
+
+    it('can specify custom error type', async () => {
+      const [err] = await go<never, CustomError>(() => {
+        throw new CustomError('custom');
+      });
+      if (!err) {
+        expect(err).not.toBeNull();
+        return;
+      }
+
+      assertType<CustomError>(err);
+      expect(err instanceof CustomError).toBe(true);
+    });
+
+    it('will wraps non error throw in Error class', async () => {
+      const [err] = await go(() => {
+        throw 'string-error';
+      });
+      if (!err) {
+        expect(err).not.toBeNull();
+        return;
+      }
+
+      assertType<Error>(err);
+      expect(err instanceof Error).toBe(true);
+    });
   });
 });

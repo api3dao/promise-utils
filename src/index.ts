@@ -3,11 +3,11 @@ export type GoResultSuccessArray<T> = [null, T];
 export type GoResultSuccessObject<T> = { data: T; success: true };
 export type GoResultSuccess<T> = GoResultSuccessArray<T> & GoResultSuccessObject<T>;
 
-export type GoResultErrorArray<E = Error> = [E, null];
-export type GoResultErrorObject<E = Error> = { error: E; success: false };
-export type GoResultError<E = Error> = [E, null] & { error: E; success: false };
+export type GoResultErrorArray<E extends Error = Error> = [E, null];
+export type GoResultErrorObject<E extends Error = Error> = { error: E; success: false };
+export type GoResultError<E extends Error = Error> = [E, null] & { error: E; success: false };
 
-export type GoResult<T, E = Error> = GoResultSuccess<T> | GoResultError<E>;
+export type GoResult<T, E extends Error = Error> = GoResultSuccess<T> | GoResultError<E>;
 
 export const success = <T>(value: T): GoResultSuccess<T> => {
   const result: any = [null, value];
@@ -15,30 +15,35 @@ export const success = <T>(value: T): GoResultSuccess<T> => {
   return result;
 };
 
-export const fail = <E = Error>(err: E): GoResultError<E> => {
+export const fail = <E extends Error>(err: Error): GoResultError<E> => {
   const result: any = [err, null];
   result.error = err;
   return result;
 };
 
-export const goSync = <T>(fn: () => T): GoResult<T> => {
+export const goSync = <T, E extends Error>(fn: () => T): GoResult<T, E> => {
   try {
     return success(fn());
   } catch (err) {
-    if (err instanceof Error) return fail(err);
-    return fail(new Error('' + err));
+    return createError(err);
   }
 };
 
-export const go = async <T>(fn: Promise<T> | (() => Promise<T>)): Promise<GoResult<T>> => {
+const createError = <E extends Error>(err: unknown): GoResultError<E> => {
+  if (err instanceof Error) return fail(err);
+  return fail(new Error('' + err));
+};
+
+export const go = async <T, E extends Error>(fn: Promise<T> | (() => Promise<T>)): Promise<GoResult<T, E>> => {
   // We need try/catch because `fn` might throw sync errors as well
   try {
     if (typeof fn === 'function') {
-      return fn().then(success).catch(fail);
+      return fn()
+        .then(success)
+        .catch((err) => createError(err));
     }
-    return fn.then(success).catch(fail);
+    return fn.then(success).catch((err) => createError(err));
   } catch (err) {
-    if (err instanceof Error) return fail(err);
-    return fail(new Error('' + err));
+    return createError(err);
   }
 };
