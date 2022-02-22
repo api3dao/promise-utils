@@ -1,4 +1,4 @@
-import { go, goSync, success, fail, assertGoSuccess } from './index';
+import { go, goSync, success, fail, assertGoSuccess, assertGoError } from './index';
 import { assertType, Equal } from 'type-plus';
 
 describe('basic goSync usage', () => {
@@ -207,7 +207,19 @@ it('assertGoSuccess works', () => {
 
   assertGoSuccess(res);
 
-  // Data property should now be inferred since the success was asserted
+  // The "data" property should now be inferred since the success was asserted
   const data = res.data;
   expect(data).toBe(data);
+});
+
+it('assertGoError works', () => {
+  const res = goSync(() => {
+    throw new Error('error');
+  });
+
+  assertGoError(res);
+
+  // The "error" property should now be inferred since the success was asserted
+  const err = res.error;
+  expect(err).toBe(err);
 });
