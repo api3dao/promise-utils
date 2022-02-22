@@ -6,18 +6,6 @@
   "browser": "./build/es6",
   "repository": "git@github.com:api3dao/promise-utils",
   "license": "MIT",
-  "engines": {
-    "node": ">=14.x"
-  },
-  "devDependencies": {
-    "@types/jest": "^27.4.0",
-    "husky": "^7.0.0",
-    "jest": "^27.5.1",
-    "prettier": "^2.5.1",
-    "ts-jest": "^27.1.3",
-    "type-plus": "^4.0.0",
-    "typescript": "^4.5.5"
-  },
   "scripts": {
     "build:cjs": "yarn tsc -p tsconfig.build-cjs.json",
     "build:es6": "yarn tsc -p tsconfig.build-es6.json",
@@ -31,6 +19,15 @@
     "prepare": "husky install",
     "test:watch": "jest --watch",
     "test": "jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.4.0",
+    "husky": "^7.0.0",
+    "jest": "^27.5.1",
+    "prettier": "^2.5.1",
+    "ts-jest": "^27.1.3",
+    "type-plus": "^4.0.0",
+    "typescript": "^4.5.5"
   },
   "dependencies": {}
 }
