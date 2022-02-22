@@ -1,4 +1,4 @@
-# NOTE: Keep in sync with .prettierignore
+# NOTE: Keep in sync with .gitignore
 
 # Dependencies
 /node_modules
