@@ -175,12 +175,21 @@ describe('custom error type', () => {
       }
     }
 
+    // The error message for when reading a property of undefined has changed between major node versions
+    const expectReadPropertyOfUndefined = (res: unknown, prop: string) => {
+      if (process.version.startsWith('v16')) {
+        expect(res).toEqual(fail(new TypeError(`Cannot read properties of undefined (reading '${prop}')`)));
+      } else {
+        expect(res).toEqual(fail(new TypeError(`Cannot read property '${prop}' of undefined`)));
+      }
+    };
+
     it('fails for sync version', () => {
       const test = new Test();
 
       const res = goSync(test.sync);
 
-      expect(res).toEqual(fail(new TypeError("Cannot read property '_sync' of undefined")));
+      expectReadPropertyOfUndefined(res, '_sync');
     });
 
     it('fails for async version', async () => {
@@ -188,7 +197,7 @@ describe('custom error type', () => {
 
       const res = await go(test.async);
 
-      expect(res).toEqual(fail(new TypeError("Cannot read property '_async' of undefined")));
+      expectReadPropertyOfUndefined(res, '_async');
     });
   });
 });
