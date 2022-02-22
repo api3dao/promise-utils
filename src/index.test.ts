@@ -223,3 +223,16 @@ it('assertGoError works', () => {
   const err = res.error;
   expect(err).toBe(err);
 });
+
+// This problem is caused because the value returned by go utils is an array with additional object properties which is
+// difficult to serialize and test equality.
+it('show testing limitation', () => {
+  const res = goSync(() => 123);
+  const spread = [...res];
+
+  // Fails with cryptic error:
+  // "Expected": ...
+  // "Received: serializes to the same string"
+  expect(res).not.toEqual([null, 123]);
+  expect(spread).toEqual([null, 123]);
+});
