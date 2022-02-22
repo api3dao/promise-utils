@@ -17,7 +17,7 @@ describe('goSync', () => {
 
 describe('go', () => {
   it('resolves successful asynchronous functions', async () => {
-    const successFn = new Promise(res => res(2));
+    const successFn = new Promise((res) => res(2));
     const res = await go(successFn);
     expect(res).toEqual(success(2));
   });

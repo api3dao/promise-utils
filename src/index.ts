@@ -34,9 +34,7 @@ export const go = async <T>(fn: Promise<T> | (() => Promise<T>)): Promise<GoResu
   // We need try/catch because `fn` might throw sync errors as well
   try {
     if (typeof fn === 'function') {
-      return fn()
-        .then(success)
-        .catch(fail);
+      return fn().then(success).catch(fail);
     }
     return fn.then(success).catch(fail);
   } catch (err) {
