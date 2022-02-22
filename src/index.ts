@@ -25,11 +25,11 @@ export const goSync = <T, E extends Error>(fn: () => T): GoResult<T, E> => {
   try {
     return success(fn());
   } catch (err) {
-    return createError(err);
+    return createGoError(err);
   }
 };
 
-const createError = <E extends Error>(err: unknown): GoResultError<E> => {
+const createGoError = <E extends Error>(err: unknown): GoResultError<E> => {
   if (err instanceof Error) return fail(err);
   return fail(new Error('' + err));
 };
@@ -40,18 +40,26 @@ export const go = async <T, E extends Error>(fn: Promise<T> | (() => Promise<T>)
     if (typeof fn === 'function') {
       return fn()
         .then(success)
-        .catch((err) => createError(err));
+        .catch((err) => createGoError(err));
     }
-    return fn.then(success).catch((err) => createError(err));
+    return fn.then(success).catch((err) => createGoError(err));
   } catch (err) {
-    return createError(err);
+    return createGoError(err);
   }
 };
 
 // NOTE: This needs to be written using 'function' syntax (cannot be arrow function)
 // See: https://github.com/microsoft/TypeScript/issues/34523#issuecomment-542978853
 export function assertGoSuccess<T>(result: GoResult<T>): asserts result is GoResultSuccess<T> {
-  if (result[0]) {
-    throw result[0];
+  if (result.success) {
+    throw result.data;
+  }
+}
+
+// NOTE: This needs to be written using 'function' syntax (cannot be arrow function)
+// See: https://github.com/microsoft/TypeScript/issues/34523#issuecomment-542978853
+export function assertGoError<E extends Error>(result: GoResult<any, E>): asserts result is GoResultError<E> {
+  if (result.success) {
+    throw result.data;
   }
 }
