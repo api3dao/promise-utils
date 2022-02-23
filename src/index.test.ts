@@ -5,6 +5,7 @@ describe('basic goSync usage', () => {
   it('resolves successful synchronous functions', () => {
     const res = goSync(() => 2 + 2);
     expect(res).toEqual(success(4));
+    expect(res).toEqual({ success: true, data: 4 });
   });
 
   it('resolves unsuccessful synchronous functions', () => {
@@ -13,6 +14,7 @@ describe('basic goSync usage', () => {
       throw err;
     });
     expect(res).toEqual(fail(err));
+    expect(res).toEqual({ success: false, error: err });
   });
 });
 
@@ -73,13 +75,11 @@ describe('custom error type', () => {
 
   describe('goSync', () => {
     it('error handling', () => {
-      const [err] = goSync(() => {
+      const goRes = goSync(() => {
         throw new CustomError('custom');
       });
-      if (!err) {
-        expect(err).not.toBeNull();
-        return;
-      }
+      assertGoError(goRes);
+      const err = goRes.error;
 
       assertType<Error>(err);
       // Check that "err" is not assignable to CustomError
@@ -88,26 +88,22 @@ describe('custom error type', () => {
     });
 
     it('can specify custom error type', () => {
-      const [err] = goSync<never, CustomError>(() => {
+      const goRes = goSync<never, CustomError>(() => {
         throw new CustomError('custom');
       });
-      if (!err) {
-        expect(err).not.toBeNull();
-        return;
-      }
+      assertGoError(goRes);
+      const err = goRes.error;
 
       assertType<CustomError>(err);
       expect(err instanceof CustomError).toBe(true);
     });
 
     it('will wraps non error throw in Error class', () => {
-      const [err] = goSync(() => {
+      const goRes = goSync(() => {
         throw 'string-error';
       });
-      if (!err) {
-        expect(err).not.toBeNull();
-        return;
-      }
+      assertGoError(goRes);
+      const err = goRes.error;
 
       assertType<Error>(err);
       expect(err instanceof Error).toBe(true);
@@ -116,13 +112,11 @@ describe('custom error type', () => {
 
   describe('go', () => {
     it('error handling', async () => {
-      const [err] = await go(() => {
+      const goRes = await go(() => {
         throw new CustomError('custom');
       });
-      if (!err) {
-        expect(err).not.toBeNull();
-        return;
-      }
+      assertGoError(goRes);
+      const err = goRes.error;
 
       assertType<Error>(err);
       // Check that "err" is not assignable to CustomError
@@ -131,26 +125,22 @@ describe('custom error type', () => {
     });
 
     it('can specify custom error type', async () => {
-      const [err] = await go<never, CustomError>(() => {
+      const goRes = await go<never, CustomError>(() => {
         throw new CustomError('custom');
       });
-      if (!err) {
-        expect(err).not.toBeNull();
-        return;
-      }
+      assertGoError(goRes);
+      const err = goRes.error;
 
       assertType<CustomError>(err);
       expect(err instanceof CustomError).toBe(true);
     });
 
     it('will wraps non error throw in Error class', async () => {
-      const [err] = await go(() => {
+      const goRes = await go(() => {
         throw 'string-error';
       });
-      if (!err) {
-        expect(err).not.toBeNull();
-        return;
-      }
+      assertGoError(goRes);
+      const err = goRes.error;
 
       assertType<Error>(err);
       expect(err instanceof Error).toBe(true);
@@ -222,17 +212,4 @@ it('assertGoError works', () => {
   // The "error" property should now be inferred since the success was asserted
   const err = res.error;
   expect(err).toBe(err);
-});
-
-// This problem is caused because the value returned by go utils is an array with additional object properties which is
-// difficult to serialize and test equality.
-it('show testing limitation', () => {
-  const res = goSync(() => 123);
-  const spread = [...res];
-
-  // Fails with cryptic error:
-  // "Expected": ...
-  // "Received: serializes to the same string"
-  expect(res).not.toEqual([null, 123]);
-  expect(spread).toEqual([null, 123]);
 });
