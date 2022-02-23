@@ -1,24 +1,17 @@
-// NOTE: We use discriminated unions over "success" property which simplifies the usage
-export type GoResultSuccessArray<T> = [null, T];
-export type GoResultSuccessObject<T> = { data: T; success: true };
-export type GoResultSuccess<T> = GoResultSuccessArray<T> & GoResultSuccessObject<T>;
-
-export type GoResultErrorArray<E extends Error = Error> = [E, null];
-export type GoResultErrorObject<E extends Error = Error> = { error: E; success: false };
-export type GoResultError<E extends Error = Error> = [E, null] & { error: E; success: false };
+// NOTE: We use discriminated unions over "success" property
+export type GoResultSuccess<T> = { data: T; success: true };
+export type GoResultError<E extends Error = Error> = { error: E; success: false };
 
 export type GoResult<T, E extends Error = Error> = GoResultSuccess<T> | GoResultError<E>;
 
 export const success = <T>(value: T): GoResultSuccess<T> => {
-  const result: any = [null, value];
-  result.data = value;
-  return result;
+  return { success: true, data: value };
 };
 
+// We allow the consumer to type which error is returned. The "err" parameter has weaker type ("Error") to accommodate
+// for any error generic error thrown by the go functions.
 export const fail = <E extends Error>(err: Error): GoResultError<E> => {
-  const result: any = [err, null];
-  result.error = err;
-  return result;
+  return { success: false, error: err as E };
 };
 
 export const goSync = <T, E extends Error>(fn: () => T): GoResult<T, E> => {
@@ -51,8 +44,8 @@ export const go = async <T, E extends Error>(fn: Promise<T> | (() => Promise<T>)
 // NOTE: This needs to be written using 'function' syntax (cannot be arrow function)
 // See: https://github.com/microsoft/TypeScript/issues/34523#issuecomment-542978853
 export function assertGoSuccess<T>(result: GoResult<T>): asserts result is GoResultSuccess<T> {
-  if (result.success) {
-    throw result.data;
+  if (!result.success) {
+    throw result.error;
   }
 }
 
@@ -60,6 +53,6 @@ export function assertGoSuccess<T>(result: GoResult<T>): asserts result is GoRes
 // See: https://github.com/microsoft/TypeScript/issues/34523#issuecomment-542978853
 export function assertGoError<E extends Error>(result: GoResult<any, E>): asserts result is GoResultError<E> {
   if (result.success) {
-    throw result.data;
+    throw new Error('Assertion failed. Expected error, but no error was thrown');
   }
 }
