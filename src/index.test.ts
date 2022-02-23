@@ -192,24 +192,42 @@ describe('custom error type', () => {
   });
 });
 
-it('assertGoSuccess works', () => {
-  const res = goSync(() => 123);
+describe('assertGoSuccess', () => {
+  it('works for success', () => {
+    const res = goSync(() => 123);
 
-  assertGoSuccess(res);
+    assertGoSuccess(res);
 
-  // The "data" property should now be inferred since the success was asserted
-  const data = res.data;
-  expect(data).toBe(data);
-});
-
-it('assertGoError works', () => {
-  const res = goSync(() => {
-    throw new Error('error');
+    // The "data" property should now be inferred since the success was asserted
+    const data = res.data;
+    expect(data).toBe(data);
   });
 
-  assertGoError(res);
+  it('works for failure (rethrows the go error)', () => {
+    const res = goSync(() => {
+      throw new Error('my bad');
+    });
 
-  // The "error" property should now be inferred since the success was asserted
-  const err = res.error;
-  expect(err).toBe(err);
+    expect(() => assertGoSuccess(res)).toThrow('my bad');
+  });
+});
+
+describe('assertGoError', () => {
+  it('works for success', () => {
+    const res = goSync(() => 123);
+
+    expect(() => assertGoError(res)).toThrow('Assertion failed. Expected error, but no error was thrown');
+  });
+
+  it('works for failure', () => {
+    const res = goSync(() => {
+      throw new Error('error');
+    });
+
+    assertGoError(res);
+
+    // The "error" property should now be inferred since the success was asserted
+    const err = res.error;
+    expect(err).toBe(err);
+  });
 });
