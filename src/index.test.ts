@@ -146,49 +146,49 @@ describe('custom error type', () => {
       expect(err instanceof Error).toBe(true);
     });
   });
+});
 
-  describe('the "this" limitation', () => {
-    class Test {
-      constructor() {}
-      sync() {
-        return this._sync();
-      }
-      _sync() {
-        return '123';
-      }
-
-      async() {
-        return this._async();
-      }
-      _async() {
-        return Promise.resolve('123');
-      }
+describe('the "this" limitation', () => {
+  class Test {
+    constructor() {}
+    sync() {
+      return this._sync();
+    }
+    _sync() {
+      return '123';
     }
 
-    // The error message for when reading a property of undefined has changed between major node versions
-    const expectReadPropertyOfUndefined = (res: unknown, prop: string) => {
-      if (process.version.startsWith('v16')) {
-        expect(res).toEqual(fail(new TypeError(`Cannot read properties of undefined (reading '${prop}')`)));
-      } else {
-        expect(res).toEqual(fail(new TypeError(`Cannot read property '${prop}' of undefined`)));
-      }
-    };
+    async() {
+      return this._async();
+    }
+    _async() {
+      return Promise.resolve('123');
+    }
+  }
 
-    it('fails for sync version', () => {
-      const test = new Test();
+  // The error message for when reading a property of undefined has changed between major node versions
+  const expectReadPropertyOfUndefined = (res: unknown, prop: string) => {
+    if (process.version.startsWith('v16')) {
+      expect(res).toEqual(fail(new TypeError(`Cannot read properties of undefined (reading '${prop}')`)));
+    } else {
+      expect(res).toEqual(fail(new TypeError(`Cannot read property '${prop}' of undefined`)));
+    }
+  };
 
-      const res = goSync(test.sync);
+  it('fails for sync version', () => {
+    const test = new Test();
 
-      expectReadPropertyOfUndefined(res, '_sync');
-    });
+    const res = goSync(test.sync);
 
-    it('fails for async version', async () => {
-      const test = new Test();
+    expectReadPropertyOfUndefined(res, '_sync');
+  });
 
-      const res = await go(test.async);
+  it('fails for async version', async () => {
+    const test = new Test();
 
-      expectReadPropertyOfUndefined(res, '_async');
-    });
+    const res = await go(test.async);
+
+    expectReadPropertyOfUndefined(res, '_async');
   });
 });
 
