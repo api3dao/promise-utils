@@ -9,7 +9,7 @@ export const success = <T>(value: T): GoResultSuccess<T> => {
 };
 
 // We allow the consumer to type which error is returned. The "err" parameter has weaker type ("Error") to accommodate
-// for any error generic error thrown by the go functions.
+// for a generic error thrown by the go functions.
 export const fail = <E extends Error>(err: Error): GoResultError<E> => {
   return { success: false, error: err as E };
 };
