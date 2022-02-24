@@ -231,3 +231,87 @@ describe('assertGoError', () => {
     expect(err).toBe(err);
   });
 });
+
+// NOTE: Keep in sync with README
+describe('documentation snippets are valid', () => {
+  const fetchData = (_path: string) => {
+    if (_path.startsWith('throw')) return Promise.reject('unexpected error');
+    return Promise.resolve('some data');
+  };
+
+  it('success usage', async () => {
+    const goFetchData = await go(() => fetchData('users'));
+    if (goFetchData.success) {
+      const data = goFetchData.data;
+
+      assertType<string>(data);
+      expect(data).toBe('some data');
+    }
+  });
+
+  it('error usage', async () => {
+    const goFetchData = await go(() => fetchData('throw'));
+    if (!goFetchData.success) {
+      const error = goFetchData.error;
+
+      expect(error).toEqual(new Error('unexpected error'));
+    }
+  });
+
+  it('sync usage', () => {
+    const someData = { key: 123 };
+    const parseData = (rawData: typeof someData) => ({ ...rawData, parsed: true });
+    const goParseData = goSync(() => parseData(someData));
+    if (goParseData.success) {
+      const data = goParseData.data;
+
+      expect(data.parsed).toBe(true);
+    }
+  });
+
+  it('shows limitation', () => {
+    class MyClass {
+      constructor() {}
+      get() {
+        return this._get();
+      }
+      _get() {
+        return '123';
+      }
+    }
+
+    const myClass = new MyClass();
+    const resWorks = goSync(() => myClass.get()); // This works
+    assertGoSuccess(resWorks);
+    const resFails = goSync(myClass.get); // This doesn't work
+    assertGoError(resFails);
+  });
+
+  it('verbosity of try catch', async () => {
+    class MyError extends Error {
+      reason: string;
+      constructor(m: string) {
+        super(m);
+        this.reason = m;
+      }
+    }
+    const someAsyncCall = () => Promise.reject(new MyError('custom error'));
+    const logError = (mess: string) => expect(mess).toEqual(expect.any(String));
+
+    // Verbose try catch
+    try {
+      const data = await someAsyncCall();
+      assertType<never>(data); // The function above should throw
+    } catch (e) {
+      return logError((e as MyError).reason);
+    }
+
+    // Compare it to simpler version using go
+    type MyData = never;
+    const goRes = await go<MyData, MyError>(someAsyncCall);
+    if (!goRes.success) return logError(goRes.error.reason);
+    // At this point TypeScript infers that the error was handled and goRes must be a success response
+    const data = goRes.data;
+    assertType<MyData>(data);
+  });
+});
