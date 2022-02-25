@@ -14,9 +14,9 @@ or if you use npm
 
 ## Usage
 
-The API is small and well focused on the error handling problem. The main functions of this package are `go` and
-`goSync` functions. They accept a function to execute. If the function executes without an error, a success response
-with the data is returned, otherwise error response is returned.
+The API is small and well focused on providing [more concise error handling](#motivation). The main functions of this
+package are `go` and `goSync` functions. They accept a function to execute. If the function executes without an error, a
+success response with the data is returned, otherwise an error response is returned.
 
 <!-- NOTE: Keep in sync with the "documentation snippets are valid" test -->
 
@@ -34,7 +34,8 @@ or:
 
 ```ts
 // Imagine an async function for fetching API data
-const goFetchData = await go(() => fetchData('users'));
+// If the fetch data is a non class function returning a promise, you can drop the arrow function
+const goFetchData = await go(fetchData('users'));
 // The "goFetchData" value is either: {success: true, data: ...} or {success: false, error: ...}
 if (!goFetchData.success) {
   const error = goFetchData.error
@@ -47,7 +48,7 @@ and similarly for synchronous functions:
 ```ts
 const someData = ...
 // Imagine a synchronous function for parsing data
-const goParseData = await goSync(() => parseData(someData));
+const goParseData = goSync(() => parseData(someData));
 // The goParseData value is either: {success: true, data: ...} or {success: false, error: ...}
 if (goParseData.success) {
   const data = goParseData.data
@@ -55,15 +56,15 @@ if (goParseData.success) {
 }
 ```
 
-The return value from the promise utils functions works very well with Typescript inference. When you check the the
-`success` property, typescript will infer the correct response type.
+The return value from the promise utils functions works very well with TypeScript inference. When you check the the
+`success` property, TypeScript will infer the correct response type.
 
 ## API
 
 The full `promise-utils` API consists of the following functions:
 
-- `go(asyncFn)` - Executes the `asyncFn` an returns a response of type `GoResult`
-- `goSync(fn)` - Executes the `fn` an returns a response of type `GoResult`
+- `go(asyncFn)` - Executes the `asyncFn` and returns a response of type `GoResult`
+- `goSync(fn)` - Executes the `fn` and returns a response of type `GoResult`
 - `assertGoSuccess(goRes)` - Verifies that the `goRes` is a success response (`GoResultSuccess` type) and throws
   otherwise.
 - `assertGoError(goRes)` - Verifies that the `goRes` is an error response (`GoResultError` type) and throws otherwise.
@@ -106,12 +107,12 @@ either:
 
 1. Have them in a same try catch block - but then it's difficult to differentiate between what error has been thrown.
    Also this usually leads to a lot of code inside a try block and the catch clause acts more like "catch anything".
-2. Use nested try catch blocks - but this hurts readability and forces you into
+2. Use nested try catch blocks - but this hurts readability and forces you into the
    [callback hell pattern](http://callbackhell.com/).
 
 ### Consistent throwing of an `Error` instance
 
-Javascript supports throwing any expression, not just `Error` instances. This is also a reason why Typescript infers the
+JavaScript supports throwing any expression, not just `Error` instances. This is also a reason why TypeScript infers the
 error as `unknown` or `any` (see:
 [useUnknownInCatchVariables](https://www.typescriptlang.org/tsconfig#useUnknownInCatchVariables)).
 
@@ -141,4 +142,4 @@ const resFails = goSync(myClass.get); // This doesn't work
 ```
 
 The problem is that the `this` keyword is determined by how a function is called and in the second example, the `this`
-insode the `get` function is `undefined` which makes the `this._get()` throw an error.
+inside the `get` function is `undefined` which makes the `this._get()` throw an error.

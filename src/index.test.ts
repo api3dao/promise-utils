@@ -250,7 +250,7 @@ describe('documentation snippets are valid', () => {
   });
 
   it('error usage', async () => {
-    const goFetchData = await go(() => fetchData('throw'));
+    const goFetchData = await go(fetchData('throw'));
     if (!goFetchData.success) {
       const error = goFetchData.error;
 
