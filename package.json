@@ -34,5 +34,7 @@
     "type-plus": "^4.0.0",
     "typescript": "^4.6.2"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@lifeomic/attempt": "^3.0.2"
+  }
 }
