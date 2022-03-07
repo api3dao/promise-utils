@@ -1,29 +1,6 @@
 import { go, goSync, success, fail, assertGoSuccess, assertGoError, retryGo } from './index';
 import { assertType, Equal } from 'type-plus';
 
-describe('basic retryGo usage', () => {
-  const operations = { successFn: () => new Promise((res) => res(2)) };
-  it('retries the specified number of times', async () => {
-    const retries = 3;
-    jest
-      .spyOn(operations, 'successFn')
-      .mockRejectedValueOnce(new Error('Error 1'))
-      .mockRejectedValueOnce(new Error('Error 2'));
-
-    const res = await retryGo(operations.successFn, { retries });
-    expect(res).toEqual(success(2));
-    expect(operations.successFn).toHaveBeenCalledTimes(retries);
-  });
-
-  it('retries and resolves after timing out', async () => {
-    jest.spyOn(operations, 'successFn').mockRejectedValueOnce(new Error('Operation timed out'));
-
-    const res = await retryGo(operations.successFn);
-    expect(res).toEqual(success(2));
-    expect(operations.successFn).toHaveBeenCalledTimes(2);
-  });
-});
-
 describe('basic goSync usage', () => {
   it('resolves successful synchronous functions', () => {
     const res = goSync(() => 2 + 2);
