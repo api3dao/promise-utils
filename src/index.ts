@@ -5,16 +5,16 @@ const DEFAULT_RETRY_TIMEOUT_MS = 5_000;
 // NOTE: We use discriminated unions over "success" property
 export type GoResultSuccess<T> = { data: T; success: true };
 export type GoResultError<E extends Error = Error> = { error: E; success: false };
-export type GoResult<T, E extends Error = Error> = [GoResultError<E>, null] | [null, GoResultSuccess<T>];
+export type GoResult<T, E extends Error = Error> = GoResultSuccess<T> | GoResultError<E>;
 
-export const success = <T>(value: T): [null, GoResultSuccess<T>] => {
-  return [null, { success: true, data: value }];
+export const success = <T>(value: T): GoResultSuccess<T> => {
+  return { success: true, data: value };
 };
 
 // We allow the consumer to type which error is returned. The "err" parameter has weaker type ("Error") to accommodate
 // for a generic error thrown by the go functions.
-export const fail = <E extends Error>(err: Error): [GoResultError<E>, null] => {
-  return [{ success: false, error: err as E }, null];
+export const fail = <E extends Error>(err: Error): GoResultError<E> => {
+  return { success: false, error: err as E };
 };
 
 export const goSync = <T, E extends Error>(fn: () => T): GoResult<T, E> => {
@@ -25,7 +25,7 @@ export const goSync = <T, E extends Error>(fn: () => T): GoResult<T, E> => {
   }
 };
 
-const createGoError = <E extends Error>(err: unknown): [GoResultError<E>, null] => {
+const createGoError = <E extends Error>(err: unknown): GoResultError<E> => {
   if (err instanceof Error) return fail(err);
   return fail(new Error('' + err));
 };
@@ -58,18 +58,16 @@ export const go = async <T, E extends Error>(
 
 // NOTE: This needs to be written using 'function' syntax (cannot be arrow function)
 // See: https://github.com/microsoft/TypeScript/issues/34523#issuecomment-542978853
-export function assertGoSuccess<T>(result: GoResult<T>): asserts result is [null, GoResultSuccess<T>] {
-  const [error, res] = result;
-  if (!res || !res.success) {
-    throw error?.error;
+export function assertGoSuccess<T>(result: GoResult<T>): asserts result is GoResultSuccess<T> {
+  if (!result.success) {
+    throw result.error;
   }
 }
 
 // NOTE: This needs to be written using 'function' syntax (cannot be arrow function)
 // See: https://github.com/microsoft/TypeScript/issues/34523#issuecomment-542978853
-export function assertGoError<E extends Error>(result: GoResult<any, E>): asserts result is [GoResultError<E>, any] {
-  const [error, res] = result;
-  if ((res && res.success) || !error) {
+export function assertGoError<E extends Error>(result: GoResult<any, E>): asserts result is GoResultError<E> {
+  if (result.success) {
     throw new Error('Assertion failed. Expected error, but no error was thrown');
   }
 }

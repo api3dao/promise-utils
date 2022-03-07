@@ -5,7 +5,7 @@ describe('basic goSync usage', () => {
   it('resolves successful synchronous functions', () => {
     const res = goSync(() => 2 + 2);
     expect(res).toEqual(success(4));
-    expect(res).toEqual([null, { success: true, data: 4 }]);
+    expect(res).toEqual({ success: true, data: 4 });
   });
 
   it('resolves unsuccessful synchronous functions', () => {
@@ -14,7 +14,7 @@ describe('basic goSync usage', () => {
       throw err;
     });
     expect(res).toEqual(fail(err));
-    expect(res).toEqual([{ success: false, error: err }, null]);
+    expect(res).toEqual({ success: false, error: err });
   });
 });
 
@@ -128,13 +128,12 @@ describe('custom error type', () => {
         throw new CustomError('custom');
       });
       assertGoError(goRes);
-      const [{ error }, res] = goRes;
+      const err = goRes.error;
 
-      assertType<Error>(error);
+      assertType<Error>(err);
       // Check that "err" is not assignable to CustomError
-      assertType.isFalse(false as Equal<CustomError, typeof error>);
-      expect(error instanceof CustomError).toBe(true);
-      expect(res).toEqual(null);
+      assertType.isFalse(false as Equal<CustomError, typeof err>);
+      expect(err instanceof CustomError).toBe(true);
     });
 
     it('can specify custom error type', () => {
@@ -142,11 +141,10 @@ describe('custom error type', () => {
         throw new CustomError('custom');
       });
       assertGoError(goRes);
-      const [{ error }, res] = goRes;
+      const err = goRes.error;
 
-      assertType<CustomError>(error);
-      expect(error instanceof CustomError).toBe(true);
-      expect(res).toEqual(null);
+      assertType<CustomError>(err);
+      expect(err instanceof CustomError).toBe(true);
     });
 
     it('will wraps non error throw in Error class', () => {
@@ -154,11 +152,10 @@ describe('custom error type', () => {
         throw 'string-error';
       });
       assertGoError(goRes);
-      const [{ error }, res] = goRes;
+      const err = goRes.error;
 
-      assertType<Error>(error);
-      expect(error instanceof Error).toBe(true);
-      expect(res).toEqual(null);
+      assertType<Error>(err);
+      expect(err instanceof Error).toBe(true);
     });
   });
 
@@ -168,13 +165,12 @@ describe('custom error type', () => {
         throw new CustomError('custom');
       });
       assertGoError(goRes);
-      const [{ error }, res] = goRes;
+      const err = goRes.error;
 
-      assertType<Error>(error);
+      assertType<Error>(err);
       // Check that "err" is not assignable to CustomError
-      assertType.isFalse(false as Equal<CustomError, typeof error>);
-      expect(error instanceof CustomError).toBe(true);
-      expect(res).toEqual(null);
+      assertType.isFalse(false as Equal<CustomError, typeof err>);
+      expect(err instanceof CustomError).toBe(true);
     });
 
     it('can specify custom error type', async () => {
@@ -182,11 +178,10 @@ describe('custom error type', () => {
         throw new CustomError('custom');
       });
       assertGoError(goRes);
-      const [{ error }, res] = goRes;
+      const err = goRes.error;
 
-      assertType<CustomError>(error);
-      expect(error instanceof CustomError).toBe(true);
-      expect(res).toEqual(null);
+      assertType<CustomError>(err);
+      expect(err instanceof CustomError).toBe(true);
     });
 
     it('will wraps non error throw in Error class', async () => {
@@ -194,11 +189,10 @@ describe('custom error type', () => {
         throw 'string-error';
       });
       assertGoError(goRes);
-      const [{ error }, res] = goRes;
+      const err = goRes.error;
 
-      assertType<Error>(error);
-      expect(error instanceof Error).toBe(true);
-      expect(res).toEqual(null);
+      assertType<Error>(err);
+      expect(err instanceof Error).toBe(true);
     });
   });
 });
@@ -254,9 +248,8 @@ describe('assertGoSuccess', () => {
     assertGoSuccess(res);
 
     // The "data" property should now be inferred since the success was asserted
-    const [error, { data }] = res;
+    const data = res.data;
     expect(data).toBe(data);
-    expect(error).toEqual(null);
   });
 
   it('works for failure (rethrows the go error)', () => {
@@ -276,99 +269,98 @@ describe('assertGoError', () => {
   });
 
   it('works for failure', () => {
-    const goRes = goSync(() => {
+    const res = goSync(() => {
       throw new Error('error');
     });
 
-    assertGoError(goRes);
+    assertGoError(res);
 
     // The "error" property should now be inferred since the success was asserted
-    const [{ error }, res] = goRes;
-    expect(error).toBe(error);
-    expect(res).toEqual(null);
+    const err = res.error;
+    expect(err).toBe(err);
   });
 });
 
-// // NOTE: Keep in sync with README
-// describe('documentation snippets are valid', () => {
-//   const fetchData = (_path: string) => {
-//     if (_path.startsWith('throw')) return Promise.reject('unexpected error');
-//     return Promise.resolve('some data');
-//   };
+// NOTE: Keep in sync with README
+describe('documentation snippets are valid', () => {
+  const fetchData = (_path: string) => {
+    if (_path.startsWith('throw')) return Promise.reject('unexpected error');
+    return Promise.resolve('some data');
+  };
 
-//   it('success usage', async () => {
-//     const goFetchData = await go(() => fetchData('users'));
-//     if (goFetchData.success) {
-//       const data = goFetchData.data;
+  it('success usage', async () => {
+    const goFetchData = await go(() => fetchData('users'));
+    if (goFetchData.success) {
+      const data = goFetchData.data;
 
-//       assertType<string>(data);
-//       expect(data).toBe('some data');
-//     }
-//   });
+      assertType<string>(data);
+      expect(data).toBe('some data');
+    }
+  });
 
-//   it('error usage', async () => {
-//     const goFetchData = await go(fetchData('throw'));
-//     if (!goFetchData.success) {
-//       const error = goFetchData.error;
+  it('error usage', async () => {
+    const goFetchData = await go(() => fetchData('throw'));
+    if (!goFetchData.success) {
+      const error = goFetchData.error;
 
-//       expect(error).toEqual(new Error('unexpected error'));
-//     }
-//   });
+      expect(error).toEqual(new Error('unexpected error'));
+    }
+  });
 
-//   it('sync usage', () => {
-//     const someData = { key: 123 };
-//     const parseData = (rawData: typeof someData) => ({ ...rawData, parsed: true });
-//     const goParseData = goSync(() => parseData(someData));
-//     if (goParseData.success) {
-//       const data = goParseData.data;
+  it('sync usage', () => {
+    const someData = { key: 123 };
+    const parseData = (rawData: typeof someData) => ({ ...rawData, parsed: true });
+    const goParseData = goSync(() => parseData(someData));
+    if (goParseData.success) {
+      const data = goParseData.data;
 
-//       expect(data.parsed).toBe(true);
-//     }
-//   });
+      expect(data.parsed).toBe(true);
+    }
+  });
 
-//   it('shows limitation', () => {
-//     class MyClass {
-//       constructor() {}
-//       get() {
-//         return this._get();
-//       }
-//       _get() {
-//         return '123';
-//       }
-//     }
+  it('shows limitation', () => {
+    class MyClass {
+      constructor() {}
+      get() {
+        return this._get();
+      }
+      _get() {
+        return '123';
+      }
+    }
 
-//     const myClass = new MyClass();
-//     const resWorks = goSync(() => myClass.get()); // This works
-//     assertGoSuccess(resWorks);
-//     const resFails = goSync(myClass.get); // This doesn't work
-//     assertGoError(resFails);
-//   });
+    const myClass = new MyClass();
+    const resWorks = goSync(() => myClass.get()); // This works
+    assertGoSuccess(resWorks);
+    const resFails = goSync(myClass.get); // This doesn't work
+    assertGoError(resFails);
+  });
 
-//   it('verbosity of try catch', async () => {
-//     class MyError extends Error {
-//       reason: string;
-//       constructor(m: string) {
-//         super(m);
-//         this.reason = m;
-//       }
-//     }
-//     const someAsyncCall = () => Promise.reject(new MyError('custom error'));
-//     const logError = (mess: string) => expect(mess).toEqual(expect.any(String));
+  it('verbosity of try catch', async () => {
+    class MyError extends Error {
+      reason: string;
+      constructor(m: string) {
+        super(m);
+        this.reason = m;
+      }
+    }
+    const someAsyncCall = () => Promise.reject(new MyError('custom error'));
+    const logError = (mess: string) => expect(mess).toEqual(expect.any(String));
 
-//     // Verbose try catch
-//     try {
-//       const data = await someAsyncCall();
-//       assertType<never>(data); // The function above should throw
-//     } catch (e) {
-//       return logError((e as MyError).reason);
-//     }
+    // Verbose try catch
+    try {
+      const data = await someAsyncCall();
+      assertType<never>(data); // The function above should throw
+    } catch (e) {
+      return logError((e as MyError).reason);
+    }
 
-//     // Compare it to simpler version using go
-//     type MyData = never;
-//     const goRes = await go<MyData, MyError>(someAsyncCall);
-//     if (!goRes.success) return logError(goRes.error.reason);
-//     // At this point TypeScript infers that the error was handled and goRes must be a success response
-//     const data = goRes.data;
-//     assertType<MyData>(data);
-//   });
-// });
+    // Compare it to simpler version using go
+    type MyData = never;
+    const goRes = await go<MyData, MyError>(someAsyncCall);
+    if (!goRes.success) return logError(goRes.error.reason);
+    // At this point TypeScript infers that the error was handled and goRes must be a success response
+    const data = goRes.data;
+    assertType<MyData>(data);
+  });
+});
