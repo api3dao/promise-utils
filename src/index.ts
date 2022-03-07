@@ -5,11 +5,6 @@ const DEFAULT_RETRY_TIMEOUT_MS = 5_000;
 // NOTE: We use discriminated unions over "success" property
 export type GoResultSuccess<T> = { data: T; success: true };
 export type GoResultError<E extends Error = Error> = { error: E; success: false };
-
-// export type GoResult<T, E extends Error = Error> = GoResultSuccess<T> | GoResultError<E>;
-// Note: the array form below is used in Airnode
-// type GoResult<T> = [Error, null] | [null, T];
-// The promise-utils and airnode GoResult type could be combined as follows to fit the current Airnode code:
 export type GoResult<T, E extends Error = Error> = [GoResultError<E>, null] | [null, GoResultSuccess<T>];
 
 export const success = <T>(value: T): [null, GoResultSuccess<T>] => {
@@ -78,23 +73,6 @@ export function assertGoError<E extends Error>(result: GoResult<any, E>): assert
     throw new Error('Assertion failed. Expected error, but no error was thrown');
   }
 }
-
-///// FROM AIRNODE AND AIRKEEPER
-// Airnode retry - go impl:
-// go, retryOnTimeout
-
-// api-calls.ts
-// const [err, res] = await go(operation, { retries: 1, timeoutMs: DEFAULT_RETRY_TIMEOUT_MS });
-
-// airnode-node/api/index
-// const retryableCall = retryOnTimeout(API_CALL_TOTAL_TIMEOUT, () =>
-//     adapter.buildAndExecuteRequest(options, adapterConfig)
-//   );
-//   const [err, res] = await go(() => retryableCall);
-
-// node get-templates, withdrawals
-// const contractCall = () => airnodeRrp.getTemplates(templateIds);
-//   const [err, rawTemplates] = await go(contractCall, { retries: 1, timeoutMs: DEFAULT_RETRY_TIMEOUT_MS });
 
 // Adapted from:
 // https://github.com/then/is-promise
@@ -179,6 +157,5 @@ export function retryOnTimeout<T>(maxTimeoutMs: number, operation: () => Promise
   return promiseTimeout(maxTimeoutMs, promise);
 }
 
-// TODO: Airkeeper's retryGo to retry-go the input fn
 export const retryGo = <T>(fn: () => Promise<T>, options?: PromiseOptions) =>
   go(() => retryOnTimeout(DEFAULT_RETRY_TIMEOUT_MS, fn), options);
