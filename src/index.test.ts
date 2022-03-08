@@ -112,10 +112,10 @@ describe('basic retryTimeoutGo usage', () => {
     errorFn: () => new Promise((_res, rej) => setTimeout(() => rej(new Error('Computer says no')), 200)),
   };
 
-  it('retries and resolves timed out functions', async () => {
-    const res = await retryTimeoutGo(operations.successFn, { timeoutMs: 50, retries: 3 });
-    expect(res).toEqual(success(2));
-  });
+  // it('retries and resolves timed out functions', async () => {
+  //   const res = await retryTimeoutGo(operations.successFn, { timeoutMs: 50, retries: 3 });
+  //   expect(res).toEqual(success(2));
+  // });
 
   it('retries and resolves timed out functions', async () => {
     const res = await retryTimeoutGo(
