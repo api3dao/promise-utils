@@ -42,6 +42,15 @@ export const go = async <T, E extends Error>(
     timeout: options?.timeoutMs || 0,
     jitter: false,
     handleError: null,
+    // handleError: options?.timeoutMs
+    //   ? (err: any, context: AttemptContext) => {
+    //       if (err.message.includes('Retry timeout') && context.attemptsRemaining > 0) {
+    //         throw new Error(`Operation timed out, retries left: ${context.attemptsRemaining}`);
+    //       }
+    //       if (err instanceof Error) throw err;
+    //       throw new Error('' + err);
+    //     }
+    //   : null,
     handleTimeout: options?.timeoutMs
       ? (context: AttemptContext) => {
           if (context.attemptsRemaining > 0) {
@@ -94,12 +103,6 @@ export function assertGoError<E extends Error>(result: GoResult<any, E>): assert
   if (result.success) {
     throw new Error('Assertion failed. Expected error, but no error was thrown');
   }
-}
-
-// Adapted from:
-// https://github.com/then/is-promise
-export function isPromise(obj: any) {
-  return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
 }
 
 export interface PromiseOptions {
