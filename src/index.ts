@@ -42,19 +42,15 @@ export const go = async <T, E extends Error>(
     timeout: options?.timeoutMs || 0,
     jitter: false,
     handleError: null,
-    // handleError: options?.timeoutMs
-    //   ? (err: any, context: AttemptContext) => {
-    //       if (err.message.includes('Retry timeout') && context.attemptsRemaining > 0) {
-    //         throw new Error(`Operation timed out, retries left: ${context.attemptsRemaining}`);
-    //       }
-    //       if (err instanceof Error) throw err;
-    //       throw new Error('' + err);
-    //     }
-    //   : null,
     handleTimeout: options?.timeoutMs
-      ? (context: AttemptContext) => {
+      ? (context: AttemptContext, options: AttemptOptions<any>) => {
           if (context.attemptsRemaining > 0) {
-            throw new Error(`Operation timed out, retries left: ${context.attemptsRemaining}`);
+            return new Promise<T>(() =>
+              go(fn, {
+                timeoutMs: options?.timeout,
+                retries: context.attemptsRemaining,
+              })
+            );
           }
           throw new Error(`Operation timed out after final retry`);
         }
@@ -67,14 +63,6 @@ export const go = async <T, E extends Error>(
     return retry((_context) => fn(), attemptOptions)
       .then(success)
       .catch((err) => {
-        // retry if timeout error and retries left
-        if (err instanceof Error && err.message.includes('Operation timed out, retries left')) {
-          return retryFn(fn, {
-            ...attemptOptions,
-            maxAttempts: parseInt(err.message.split('Operation timed out, retries left: ')[1]!),
-          });
-        }
-        // otherwise fail
         return createGoError(err);
       });
   }
