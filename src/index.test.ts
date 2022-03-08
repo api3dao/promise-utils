@@ -1,5 +1,26 @@
-import { go, goSync, success, fail, assertGoSuccess, assertGoError, retryGo } from './index';
+import { go, goSync, success, fail, assertGoSuccess, assertGoError, retryGo, retryTimeoutGo } from './index';
 import { assertType, Equal } from 'type-plus';
+
+describe('basic retryTimeoutGo usage', () => {
+  // const operations = {
+  //   successFn: () => new Promise((res) => res(2)),
+  //   errorFn: () => new Promise((_res, rej) => rej(new Error('Computer says no'))),
+  // };
+  it('retries and resolves timed out functions', async () => {
+    // jest.spyOn(operations, 'successFn').mockRejectedValueOnce(new Error('Operation timed out'));
+
+    const res = await retryTimeoutGo(
+      new Promise((res) =>
+        setTimeout(() => {
+          res(2);
+        }, 200)
+      ),
+      { timeoutMs: 100, retries: 3 }
+    );
+    // expect(operations.successFn).toHaveBeenCalledTimes(2);
+    expect(res).toEqual(success(2));
+  });
+});
 
 describe('basic goSync usage', () => {
   it('resolves successful synchronous functions', () => {
@@ -20,24 +41,23 @@ describe('basic goSync usage', () => {
 
 describe('basic go usage', () => {
   it('resolves successful asynchronous functions', async () => {
-    const successFn = () => new Promise((res) => res(2));
+    const successFn = new Promise((res) => res(2));
     const res = await go(successFn);
     expect(res).toEqual(success(2));
   });
 
   it('resolves unsuccessful asynchronous functions', async () => {
     const err = new Error('Computer says no');
-    const errorFn = () => new Promise((_res, rej) => rej(err));
+    const errorFn = new Promise((_res, rej) => rej(err));
     const res = await go(errorFn);
     expect(res).toEqual(fail(err));
   });
 
   it('resolves asynchronous functions which throws', async () => {
     const err = new Error('Computer says no');
-    const errorFn = () =>
-      new Promise(() => {
-        throw err;
-      });
+    const errorFn = new Promise(() => {
+      throw err;
+    });
     const res = await go(errorFn);
     expect(res).toEqual(fail(err));
   });
@@ -83,32 +103,50 @@ describe('basic retryGo usage', () => {
   });
 
   it('retries and resolves after timing out', async () => {
-    jest.spyOn(operations, 'successFn').mockRejectedValueOnce(new Error('Operation timed out'));
+    jest.spyOn(operations, 'successFn').mockRejectedValueOnce(new Error('Operation timed out, retries left: 1'));
 
-    const res = await retryGo(operations.successFn);
+    const res = await retryGo(operations.successFn, { retries: 2 });
     expect(operations.successFn).toHaveBeenCalledTimes(2);
     expect(res).toEqual(success(2));
   });
 
   it('retries and resolves unsuccessful asynchronous functions', async () => {
-    jest.spyOn(operations, 'errorFn').mockRejectedValueOnce(new Error('Operation timed out'));
-
-    const res = await retryGo(operations.errorFn);
-    expect(operations.errorFn).toHaveBeenCalledTimes(2);
-    expect(res).toEqual(fail(new Error('Computer says no')));
-  });
-
-  it('retries the specified number of times and resolves unsuccessful asynchronous functions', async () => {
-    const retries = 3;
     jest
       .spyOn(operations, 'errorFn')
-      .mockRejectedValueOnce(new Error('Error 1'))
-      .mockRejectedValueOnce(new Error('Error 2'));
+      .mockRejectedValueOnce(new Error('Operation timed out, retries left: 1'))
+      .mockRejectedValueOnce(new Error('Operation timed out after final retry'));
 
-    const res = await retryGo(operations.errorFn, { retries });
-    // retries + 1 because it will retry maxAttempt times and then resolve with error
-    expect(operations.errorFn).toHaveBeenCalledTimes(retries + 1);
+    const res = await retryGo(operations.errorFn);
+    expect(operations.errorFn).toHaveBeenCalledTimes(3);
     expect(res).toEqual(fail(new Error('Computer says no')));
+  });
+});
+
+describe('basic retryTimeoutGo usage', () => {
+  const operations = {
+    successFn: () =>
+      new Promise((res) =>
+        setTimeout(() => {
+          res(2);
+        }, 50)
+      ),
+    errorFn: () => new Promise((_res, rej) => setTimeout(() => rej(new Error('Computer says no')), 200)),
+  };
+
+  it('retries and resolves timed out functions', async () => {
+    const res = await retryTimeoutGo(operations.successFn, { timeoutMs: 100, retries: 3 });
+    expect(res).toEqual(success(2));
+  });
+
+  it('retries and resolves unsuccessful asynchronous functions', async () => {
+    jest
+      .spyOn(operations, 'errorFn')
+      .mockRejectedValueOnce(new Error('Operation timed out, retries left: 1'))
+      .mockRejectedValueOnce(new Error('Operation timed out after final retry'));
+
+    const res = await retryTimeoutGo(operations.errorFn, { timeoutMs: 100, retries: 3 });
+    expect(operations.errorFn).toHaveBeenCalledTimes(3);
+    expect(res).toEqual(fail(new Error('Operation timed out after final retry')));
   });
 });
 

@@ -1,6 +1,4 @@
-import { AttemptOptions, retry, sleep } from '@lifeomic/attempt';
-const DEFAULT_RETRY_DELAY_MS = 50;
-const DEFAULT_RETRY_TIMEOUT_MS = 5_000;
+import { AttemptOptions, sleep, retry, AttemptContext } from '@lifeomic/attempt';
 
 // NOTE: We use discriminated unions over "success" property
 export type GoResultSuccess<T> = { data: T; success: true };
@@ -31,26 +29,52 @@ const createGoError = <E extends Error>(err: unknown): GoResultError<E> => {
 };
 
 export const go = async <T, E extends Error>(
-  fn: () => Promise<T>,
+  fn: Promise<T> | (() => Promise<T>),
   options?: PromiseOptions
 ): Promise<GoResult<T, E>> => {
-  try {
-    if (options?.retries) {
-      const optionsWithRetries = { ...options, retries: options.retries! };
-      return retryOperation(fn, optionsWithRetries)
-        .then(success)
-        .catch((err) => createGoError(err));
-    }
+  const attemptOptions: AttemptOptions<any> = {
+    delay: options?.retryDelayMs || 200,
+    maxAttempts: options?.retries || 1,
+    initialDelay: 0,
+    minDelay: 0,
+    maxDelay: 0,
+    factor: 0,
+    timeout: options?.timeoutMs || 0,
+    jitter: false,
+    handleError: null,
+    handleTimeout: options?.timeoutMs
+      ? (context: AttemptContext) => {
+          if (context.attemptsRemaining > 0) {
+            throw new Error(`Operation timed out, retries left: ${context.attemptsRemaining}`);
+          }
+          throw new Error(`Operation timed out after final retry`);
+        }
+      : null,
+    beforeAttempt: null,
+    calculateDelay: null,
+  };
 
-    if (options?.timeoutMs) {
-      return promiseTimeout(options.timeoutMs, fn())
-        .then(success)
-        .catch((err) => createGoError(err));
-    }
-
-    return fn()
+  function retryFn(fn: () => Promise<T>, attemptOptions: AttemptOptions<any>): Promise<any> {
+    return retry((_context) => fn(), attemptOptions)
       .then(success)
-      .catch((err) => createGoError(err));
+      .catch((err) => {
+        // retry if timeout error and retries left
+        if (err instanceof Error && err.message.includes('Operation timed out, retries left')) {
+          return retryFn(fn, {
+            ...attemptOptions,
+            maxAttempts: parseInt(err.message.split('Operation timed out, retries left: ')[1]!),
+          });
+        }
+        // otherwise fail
+        return createGoError(err);
+      });
+  }
+  // We need try/catch because `fn` might throw sync errors as well
+  try {
+    if (typeof fn === 'function') {
+      return retryFn(fn, attemptOptions);
+    }
+    return retryFn(() => fn, attemptOptions);
   } catch (err) {
     return createGoError(err);
   }
@@ -91,7 +115,7 @@ export interface RetryOptions extends PromiseOptions {
 export async function retryOperation<T>(operation: () => Promise<T>, options: RetryOptions): Promise<T> {
   // We may want to use some of these options in the future
   const attemptOptions: AttemptOptions<any> = {
-    delay: options.retryDelayMs || DEFAULT_RETRY_DELAY_MS,
+    delay: options.retryDelayMs || 0,
     maxAttempts: options.retries + 1,
     initialDelay: 0,
     minDelay: 0,
@@ -138,7 +162,7 @@ export function retryOnTimeout<T>(maxTimeoutMs: number, operation: () => Promise
           // Only if the error is a timeout error, do we retry the promise
           if (reason instanceof Error && reason.message.includes('Operation timed out')) {
             // Delay the new attempt slightly
-            return sleep(options?.delay || DEFAULT_RETRY_DELAY_MS)
+            return sleep(options?.delay || 0)
               .then(run)
               .then(resolve)
               .catch(reject);
@@ -155,5 +179,12 @@ export function retryOnTimeout<T>(maxTimeoutMs: number, operation: () => Promise
   return promiseTimeout(maxTimeoutMs, promise);
 }
 
-export const retryGo = <T>(fn: () => Promise<T>, options?: PromiseOptions) =>
-  go(() => retryOnTimeout(DEFAULT_RETRY_TIMEOUT_MS, fn), options);
+export const retryGo = <T>(fn: Promise<T> | (() => Promise<T>), options?: PromiseOptions) =>
+  go(fn, { retries: 3, ...options });
+
+export const timeoutGo = <T>(fn: Promise<T> | (() => Promise<T>), options?: PromiseOptions) =>
+  go(fn, { timeoutMs: 10_000, ...options });
+
+export const retryTimeoutGo = <T>(fn: Promise<T> | (() => Promise<T>), options?: PromiseOptions) => {
+  return go(fn, { retries: 3, timeoutMs: 10_000, ...options });
+};
