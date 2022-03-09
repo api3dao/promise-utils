@@ -70,44 +70,44 @@ describe('basic retryGo usage', () => {
   };
 
   it('retries the specified number of times', async () => {
-    const retries = 3;
     jest
       .spyOn(operations, 'successFn')
       .mockRejectedValueOnce(new Error('Error 1'))
       .mockRejectedValueOnce(new Error('Error 2'));
 
-    const res = await retryGo(operations.successFn, { retries });
-    expect(operations.successFn).toHaveBeenCalledTimes(retries);
+    const res = await retryGo(operations.successFn, { retries: 2 });
+    expect(operations.successFn).toHaveBeenCalledTimes(3);
     expect(res).toEqual(success(2));
   });
 
-  it('retries and resolves after timing out', async () => {
+  it('retries and resolves successful asynchronous functions', async () => {
     jest
       .spyOn(operations, 'successFn')
-      .mockRejectedValueOnce(new Error('Operation timed out, retries left: 2'))
-      .mockRejectedValueOnce(new Error('Operation timed out, retries left: 1'));
+      .mockRejectedValueOnce(new Error('Error 1'))
+      .mockRejectedValueOnce(new Error('Error 2'));
 
     const res = await retryGo(operations.successFn, { retries: 3 });
     expect(operations.successFn).toHaveBeenCalledTimes(3);
     expect(res).toEqual(success(2));
   });
 
+  it('retries and resolves unsuccessful asynchronous functions', async () => {
+    const attempts = 3;
+    jest
+      .spyOn(operations, 'errorFn')
+      .mockRejectedValueOnce(new Error('Error 1'))
+      .mockRejectedValueOnce(new Error('Error 2'));
+
+    const res = await retryGo(operations.errorFn, { retries: 2 });
+    expect(operations.errorFn).toHaveBeenCalledTimes(attempts);
+    expect(res).toEqual(fail(new Error('Computer says no')));
+  });
+
   it('resolves unsuccessful asynchronous functions with no retries', async () => {
-    jest.spyOn(operations, 'errorFn').mockRejectedValueOnce(new Error('Operation timed out after final retry'));
+    jest.spyOn(operations, 'errorFn').mockRejectedValueOnce(new Error('Computer says no'));
 
     const res = await retryGo(operations.errorFn, { retries: 0 });
     expect(operations.errorFn).toHaveBeenCalledTimes(1);
-    expect(res).toEqual(fail(new Error('Operation timed out after final retry')));
-  });
-
-  it('retries and resolves unsuccessful asynchronous functions', async () => {
-    jest
-      .spyOn(operations, 'errorFn')
-      .mockRejectedValueOnce(new Error('Operation timed out, retries left: 1'))
-      .mockRejectedValueOnce(new Error('Operation timed out after final retry'));
-
-    const res = await retryGo(operations.errorFn, { retries: 2 });
-    expect(operations.errorFn).toHaveBeenCalledTimes(3);
     expect(res).toEqual(fail(new Error('Computer says no')));
   });
 });
@@ -133,7 +133,7 @@ describe('basic timeoutGo usage', () => {
     expect(res).toEqual(fail(new Error('Computer says no')));
   });
 
-  it('resolves timed out asynchoronous functions', async () => {
+  it('resolves timed out asynchronous functions', async () => {
     const res = await timeoutGo(operations.successFn, { timeoutMs: 5 });
     expect(res).toEqual(fail(new Error('Operation timed out after final retry')));
   });
@@ -163,8 +163,8 @@ describe('basic retryTimeoutGo usage', () => {
   it('retries and resolves successful asynchronous functions', async () => {
     jest
       .spyOn(operations, 'successFn')
-      .mockRejectedValueOnce(new Error('Operation timed out, retries left: 1'))
-      .mockRejectedValueOnce(new Error('Operation timed out after final retry'));
+      .mockRejectedValueOnce(new Error('Error 1'))
+      .mockRejectedValueOnce(new Error('Error 2'));
 
     const res = await retryTimeoutGo(operations.successFn, { timeoutMs: 100, retries: 3 });
     expect(operations.successFn).toHaveBeenCalledTimes(3);
@@ -174,36 +174,32 @@ describe('basic retryTimeoutGo usage', () => {
   it('retries and resolves unsuccessful asynchronous functions', async () => {
     jest
       .spyOn(operations, 'errorFn')
-      .mockRejectedValueOnce(new Error('Operation timed out, retries left: 1'))
-      .mockRejectedValueOnce(new Error('Operation timed out after final retry'));
+      .mockRejectedValueOnce(new Error('Error 1'))
+      .mockRejectedValueOnce(new Error('Error 2'));
 
     const res = await retryTimeoutGo(operations.errorFn, { timeoutMs: 100, retries: 2 });
     expect(operations.errorFn).toHaveBeenCalledTimes(3);
     expect(res).toEqual(fail(new Error('Computer says no')));
   });
 
-  it('retries and resolves unsuccessful timed out asynchronous functions', async () => {
+  it('retries and resolves successful asynchronous functions', async () => {
     jest
       .spyOn(operations, 'successFn')
-      .mockRejectedValueOnce(new Error('Operation timed out, retries left: 2'))
-      .mockRejectedValueOnce(new Error('Operation timed out, retries left: 1'))
-      .mockRejectedValueOnce(new Error('Operation timed out after final retry'));
+      .mockRejectedValueOnce(new Error('Error 1'))
+      .mockRejectedValueOnce(new Error('Error 2'))
+      .mockRejectedValueOnce(new Error('Computer says no'));
 
     const res = await retryTimeoutGo(operations.successFn, { timeoutMs: 100, retries: 2 });
     expect(operations.successFn).toHaveBeenCalledTimes(3);
-    expect(res).toEqual(fail(new Error('Operation timed out after final retry')));
+    expect(res).toEqual(fail(new Error('Computer says no')));
   });
 
   it('retries and resolves unsuccessful timed out functions', async () => {
-    const res = await retryTimeoutGo(
-      () =>
-        new Promise((res) =>
-          setTimeout(() => {
-            res(2);
-          }, 200)
-        ),
-      { timeoutMs: 50, retries: 3 }
-    );
+    const attempts = 3;
+    jest.spyOn(operations, 'successFn');
+
+    const res = await retryTimeoutGo(operations.successFn, { timeoutMs: 5, retries: 2 });
+    expect(operations.successFn).toHaveBeenCalledTimes(attempts);
     expect(res).toEqual(fail(new Error('Operation timed out after final retry')));
   });
 });
@@ -395,7 +391,7 @@ describe('documentation snippets are valid', () => {
   });
 
   it('error usage', async () => {
-    const goFetchData = await go(() => fetchData('throw'));
+    const goFetchData = await go(fetchData('throw'));
     if (!goFetchData.success) {
       const error = goFetchData.error;
 

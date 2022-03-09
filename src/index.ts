@@ -91,7 +91,7 @@ export const go = async <T, E extends Error>(
       ? async (context: AttemptContext, options: AttemptOptions<T>) => {
           if (context.attemptsRemaining > 0) {
             const res = await retryFnWrapper(fn, { ...options, maxAttempts: context.attemptsRemaining });
-            console.log('res', res);
+
             if (res.success) {
               return res.data;
             } else {
