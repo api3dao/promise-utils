@@ -83,19 +83,20 @@ export const go = async <T, E extends Error>(
     calculateDelay: null,
   };
 
-  function retryFn(fn: () => Promise<T>, attemptOptions: AttemptOptions<any>): Promise<any> {
-    return retry((_context) => fn(), attemptOptions)
+  // We need try/catch because `fn` might throw sync errors as well
+  try {
+    if (typeof fn === 'function') {
+      return retry(fn, attemptOptions)
+        .then(success)
+        .catch((err) => {
+          return createGoError(err);
+        });
+    }
+    return retry(() => fn, attemptOptions)
       .then(success)
       .catch((err) => {
         return createGoError(err);
       });
-  }
-  // We need try/catch because `fn` might throw sync errors as well
-  try {
-    if (typeof fn === 'function') {
-      return retryFn(fn, attemptOptions);
-    }
-    return retryFn(() => fn, attemptOptions);
   } catch (err) {
     return createGoError(err);
   }
