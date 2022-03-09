@@ -52,13 +52,34 @@ export const goSync = <T, E extends Error>(fn: () => T): GoResult<T, E> => {
   }
 };
 
+const retryFnWrapper = async <T, E extends Error>(
+  fn: Promise<T> | (() => Promise<T>),
+  attemptOptions: AttemptOptions<T>
+): Promise<GoResult<T, E>> => {
+  if (typeof fn === 'function') {
+    return retryFn(fn, attemptOptions);
+  }
+  return retryFn(() => fn, attemptOptions);
+};
+
+const retryFn = async <T, E extends Error>(
+  fn: () => Promise<T>,
+  attemptOptions: AttemptOptions<T>
+): Promise<GoResult<T, E>> => {
+  return retry(fn, attemptOptions)
+    .then(success)
+    .catch((err) => {
+      return createGoError(err);
+    });
+};
+
 export const go = async <T, E extends Error>(
   fn: Promise<T> | (() => Promise<T>),
   options?: PromiseOptions
 ): Promise<GoResult<T, E>> => {
   const attemptOptions: AttemptOptions<any> = {
     delay: options?.retryDelayMs || 200,
-    maxAttempts: options?.retries || 1,
+    maxAttempts: (options?.retries || 0) + 1,
     initialDelay: 0,
     minDelay: 0,
     maxDelay: 0,
@@ -67,12 +88,15 @@ export const go = async <T, E extends Error>(
     jitter: false,
     handleError: null,
     handleTimeout: options?.timeoutMs
-      ? (context: AttemptContext, options: AttemptOptions<any>) => {
+      ? async (context: AttemptContext, options: AttemptOptions<T>) => {
           if (context.attemptsRemaining > 0) {
-            return go(fn, {
-              timeoutMs: options?.timeout,
-              retries: context.attemptsRemaining,
-            });
+            const res = await retryFnWrapper(fn, { ...options, maxAttempts: context.attemptsRemaining });
+            console.log('res', res);
+            if (res.success) {
+              return res.data;
+            } else {
+              throw res.error;
+            }
           }
           throw new Error(`Operation timed out after final retry`);
         }
@@ -83,18 +107,7 @@ export const go = async <T, E extends Error>(
 
   // We need try/catch because `fn` might throw sync errors as well
   try {
-    if (typeof fn === 'function') {
-      return retry(fn, attemptOptions)
-        .then(success)
-        .catch((err) => {
-          return createGoError(err);
-        });
-    }
-    return retry(() => fn, attemptOptions)
-      .then(success)
-      .catch((err) => {
-        return createGoError(err);
-      });
+    return retryFnWrapper(fn, attemptOptions);
   } catch (err) {
     return createGoError(err);
   }
