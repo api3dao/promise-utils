@@ -69,12 +69,10 @@ export const go = async <T, E extends Error>(
     handleTimeout: options?.timeoutMs
       ? (context: AttemptContext, options: AttemptOptions<any>) => {
           if (context.attemptsRemaining > 0) {
-            return new Promise<T>(() =>
-              go(fn, {
-                timeoutMs: options?.timeout,
-                retries: context.attemptsRemaining,
-              })
-            );
+            return go(fn, {
+              timeoutMs: options?.timeout,
+              retries: context.attemptsRemaining,
+            });
           }
           throw new Error(`Operation timed out after final retry`);
         }
