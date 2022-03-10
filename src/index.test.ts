@@ -182,18 +182,6 @@ describe('basic retryTimeoutGo usage', () => {
     expect(res).toEqual(fail(new Error('Computer says no')));
   });
 
-  it('retries and resolves successful asynchronous functions', async () => {
-    jest
-      .spyOn(operations, 'successFn')
-      .mockRejectedValueOnce(new Error('Error 1'))
-      .mockRejectedValueOnce(new Error('Error 2'))
-      .mockRejectedValueOnce(new Error('Computer says no'));
-
-    const res = await retryTimeoutGo(operations.successFn, { timeoutMs: 100, retries: 2 });
-    expect(operations.successFn).toHaveBeenCalledTimes(3);
-    expect(res).toEqual(fail(new Error('Computer says no')));
-  });
-
   it('retries and resolves unsuccessful timed out functions', async () => {
     const attempts = 3;
     jest.spyOn(operations, 'successFn');
