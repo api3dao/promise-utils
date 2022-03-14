@@ -16,8 +16,8 @@ or if you use npm
 
 The API is small and well focused on providing [more concise error handling](#motivation). The main functions of this
 package are `go` and `goSync` functions. They accept a function to execute, and additionally `go` accepts an optional
-`PromiseOptions` object as the second parameter. If the function executes without an error, a success response with
-the data is returned, otherwise an error response is returned.
+`PromiseOptions` object as the second parameter. If the function executes without an error, a success response with the
+data is returned, otherwise an error response is returned.
 
 <!-- NOTE: Keep in sync with the "documentation snippets are valid" test -->
 
