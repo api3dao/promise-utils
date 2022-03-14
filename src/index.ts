@@ -1,4 +1,4 @@
-import { AttemptOptions, retry, AttemptContext } from '@lifeomic/attempt';
+import { AttemptOptions, retry } from '@lifeomic/attempt';
 const DEFAULT_RETRY_TIMEOUT_MS = 10_000;
 const DEFAULT_RETRIES = 3;
 
@@ -65,13 +65,10 @@ const retryFnWrapper = async <T, E extends Error>(
 const retryFn = async <T, E extends Error>(
   fn: () => Promise<T>,
   attemptOptions: AttemptOptions<T>
-): Promise<GoResult<T, E>> => {
-  return retry(fn, attemptOptions)
+): Promise<GoResult<T, E>> =>
+  retry(fn, attemptOptions)
     .then(success)
-    .catch((err) => {
-      return createGoError(err);
-    });
-};
+    .catch((err) => createGoError(err));
 
 export const go = async <T, E extends Error>(
   fn: Promise<T> | (() => Promise<T>),
@@ -88,7 +85,7 @@ export const go = async <T, E extends Error>(
     jitter: false,
     handleError: null,
     handleTimeout: options?.timeoutMs
-      ? async (context: AttemptContext, options: AttemptOptions<T>) => {
+      ? async (context, options) => {
           if (context.attemptsRemaining > 0) {
             const res = await retryFnWrapper(fn, { ...options, maxAttempts: context.attemptsRemaining });
 
@@ -98,7 +95,7 @@ export const go = async <T, E extends Error>(
               throw res.error;
             }
           }
-          throw new Error(`Operation timed out after final retry`);
+          throw new Error(`Operation timed out`);
         }
       : null,
     beforeAttempt: null,
@@ -111,14 +108,4 @@ export const go = async <T, E extends Error>(
   } catch (err) {
     return createGoError(err);
   }
-};
-
-export const retryGo = <T>(fn: Promise<T> | (() => Promise<T>), options?: PromiseOptions) =>
-  go(fn, { retries: DEFAULT_RETRIES, ...options });
-
-export const timeoutGo = <T>(fn: Promise<T> | (() => Promise<T>), options?: PromiseOptions) =>
-  go(fn, { timeoutMs: DEFAULT_RETRY_TIMEOUT_MS, ...options });
-
-export const retryTimeoutGo = <T>(fn: Promise<T> | (() => Promise<T>), options?: PromiseOptions) => {
-  return go(fn, { retries: 3, timeoutMs: DEFAULT_RETRY_TIMEOUT_MS, ...options });
 };
