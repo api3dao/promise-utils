@@ -15,8 +15,9 @@ or if you use npm
 ## Usage
 
 The API is small and well focused on providing [more concise error handling](#motivation). The main functions of this
-package are `go` and `goSync` functions. They accept a function to execute, and additionally `go` accepts an optional `PromiseOptions` parameter as the second parameter. If the function executes without an error, a
-success response with the data is returned, otherwise an error response is returned.
+package are `go` and `goSync` functions. They accept a function to execute, and additionally `go` accepts an optional
+`PromiseOptions` object as the second parameter. If the function executes without an error, a success response with
+the data is returned, otherwise an error response is returned.
 
 <!-- NOTE: Keep in sync with the "documentation snippets are valid" test -->
 
@@ -44,8 +45,9 @@ if (!goFetchData.success) {
 ```
 
 and with `PromiseOptions`:
+
 ```ts
-// The go function will retry 2 times with a 500 ms delay if fetchData fails to finish within 5 seconds 
+// The go function will retry 2 times with a 500 ms delay if fetchData fails to finish within 5 seconds
 const goFetchData = await go(fetchData('users'), { retries: 2, retryDelayMs: 500, timeoutMs: 5_000 });
 ...
 ```
