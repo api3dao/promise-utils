@@ -1,6 +1,4 @@
 import { AttemptOptions, retry } from '@lifeomic/attempt';
-const DEFAULT_RETRY_TIMEOUT_MS = 10_000;
-const DEFAULT_RETRIES = 3;
 
 // NOTE: We use discriminated unions over "success" property
 export type GoResultSuccess<T> = { data: T; success: true };
