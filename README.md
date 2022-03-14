@@ -15,7 +15,7 @@ or if you use npm
 ## Usage
 
 The API is small and well focused on providing [more concise error handling](#motivation). The main functions of this
-package are `go` and `goSync` functions. They accept a function to execute. If the function executes without an error, a
+package are `go` and `goSync` functions. They accept a function to execute, and additionally `go` accepts an optional `PromiseOptions` parameter as the second parameter. If the function executes without an error, a
 success response with the data is returned, otherwise an error response is returned.
 
 <!-- NOTE: Keep in sync with the "documentation snippets are valid" test -->
@@ -43,7 +43,14 @@ if (!goFetchData.success) {
 }
 ```
 
-and similarly for synchronous functions:
+and with `PromiseOptions`:
+```ts
+// The go function will retry 2 times with a 500 ms delay if fetchData fails to finish within 5 seconds 
+const goFetchData = await go(fetchData('users'), { retries: 2, retryDelayMs: 500, timeoutMs: 5_000 });
+...
+```
+
+and for synchronous functions:
 
 ```ts
 const someData = ...
@@ -63,7 +70,7 @@ The return value from the promise utils functions works very well with TypeScrip
 
 The full `promise-utils` API consists of the following functions:
 
-- `go(asyncFn)` - Executes the `asyncFn` and returns a response of type `GoResult`
+- `go(asyncFn, options)` - Executes the `asyncFn` and returns a response of type `GoResult`
 - `goSync(fn)` - Executes the `fn` and returns a response of type `GoResult`
 - `assertGoSuccess(goRes)` - Verifies that the `goRes` is a success response (`GoResultSuccess` type) and throws
   otherwise.
@@ -76,6 +83,13 @@ and the following Typescript types:
 - `GoResult<T> = { data: T; success: true }`
 - `GoResultSuccess<E extends Error = Error> = { error: E; success: false }`
 - `GoResultError<T, E extends Error = Error> = GoResultSuccess<T> | GoResultError<E>`
+- `PromiseOptions { readonly retries?: number; readonly retryDelayMs?: number; readonly timeoutMs?: number; }`
+
+The default values for `PromiseOptions` are:
+
+```ts
+{ retries: 0, retryDelay: 200, timeoutMs: 0 }
+```
 
 Take a look at the [implementation](https://github.com/api3dao/promise-utils/blob/main/src/index.ts) and
 [tests](https://github.com/api3dao/promise-utils/blob/main/src/index.test.ts) for detailed examples and usage.
