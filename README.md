@@ -93,6 +93,8 @@ The default values for `PromiseOptions` are:
 { retries: 0, retryDelay: 200, timeoutMs: 0 }
 ```
 
+By default, the `timeoutMs` value of `0` means that there is no timeout limit.
+
 Take a look at the [implementation](https://github.com/api3dao/promise-utils/blob/main/src/index.ts) and
 [tests](https://github.com/api3dao/promise-utils/blob/main/src/index.test.ts) for detailed examples and usage.
 
