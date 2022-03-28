@@ -1,4 +1,4 @@
-import { go, goSync, success, fail, assertGoSuccess, assertGoError } from './index';
+import { go, goSync, success, fail, assertGoSuccess, assertGoError, GoWrappedError } from './index';
 import { assertType, Equal } from 'type-plus';
 
 describe('basic goSync usage', () => {
@@ -359,6 +359,20 @@ describe('assertGoError', () => {
     const err = res.error;
     expect(err).toBe(err);
   });
+});
+
+it('has access to native error', async () => {
+  const throwingFn = async () => {
+    throw { message: 'an error', data: 'some data' };
+  };
+
+  const goRes = await go<never, GoWrappedError>(throwingFn);
+
+  assertGoError(goRes);
+  // The error message is the  not very useful stringified data
+  expect(goRes.error).toEqual(new Error('[object Object]'));
+  expect(goRes.error instanceof GoWrappedError).toBeTruthy();
+  expect(goRes.error.cause).toEqual({ message: 'an error', data: 'some data' });
 });
 
 // NOTE: Keep in sync with README

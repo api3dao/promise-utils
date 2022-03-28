@@ -95,6 +95,10 @@ The default values for `PromiseOptions` are:
 
 By default, the `timeoutMs` value of `0` means that there is no timeout limit.
 
+The last exported value is a `GoWrappedError` class which wraps an error which happens in go callback. The difference
+between `GoWrappedError` and regular `Error` class is that you can access `GoWrappedError.cause` to get the original
+value which was thrown by the function.
+
 Take a look at the [implementation](https://github.com/api3dao/promise-utils/blob/main/src/index.ts) and
 [tests](https://github.com/api3dao/promise-utils/blob/main/src/index.test.ts) for detailed examples and usage.
 
