@@ -11,6 +11,12 @@ export interface PromiseOptions {
   readonly timeoutMs?: number;
 }
 
+export class GoWrappedError extends Error {
+  constructor(public cause: unknown) {
+    super('' + cause);
+  }
+}
+
 // NOTE: This needs to be written using 'function' syntax (cannot be arrow function)
 // See: https://github.com/microsoft/TypeScript/issues/34523#issuecomment-542978853
 export function assertGoSuccess<T>(result: GoResult<T>): asserts result is GoResultSuccess<T> {
@@ -39,7 +45,7 @@ export const fail = <E extends Error>(err: Error): GoResultError<E> => {
 
 const createGoError = <E extends Error>(err: unknown): GoResultError<E> => {
   if (err instanceof Error) return fail(err);
-  return fail(new Error('' + err));
+  return fail(new GoWrappedError(err));
 };
 
 export const goSync = <T, E extends Error>(fn: () => T): GoResult<T, E> => {
