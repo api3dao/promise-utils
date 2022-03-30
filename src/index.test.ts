@@ -372,7 +372,7 @@ it('has access to native error', async () => {
   // The error message is the  not very useful stringified data
   expect(goRes.error).toEqual(new Error('[object Object]'));
   expect(goRes.error instanceof GoWrappedError).toBeTruthy();
-  expect(goRes.error.cause).toEqual({ message: 'an error', data: 'some data' });
+  expect(goRes.error.reason).toEqual({ message: 'an error', data: 'some data' });
 });
 
 // NOTE: Keep in sync with README
