@@ -165,3 +165,14 @@ const resFails = goSync(myClass.get); // This doesn't work
 
 The problem is that the `this` keyword is determined by how a function is called and in the second example, the `this`
 inside the `get` function is `undefined` which makes the `this._get()` throw an error.
+
+## Developer documentation
+
+### Release
+
+To release a new version follow these steps:
+
+1. `yarn && yarn build`
+2. `yarn version` and choose the version to be released
+3. `yarn publish --access public`
+4. `git push --follow-tags`
