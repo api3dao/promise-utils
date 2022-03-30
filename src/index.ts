@@ -12,8 +12,8 @@ export interface PromiseOptions {
 }
 
 export class GoWrappedError extends Error {
-  constructor(public cause: unknown) {
-    super('' + cause);
+  constructor(public reason: unknown) {
+    super('' + reason);
   }
 }
 
