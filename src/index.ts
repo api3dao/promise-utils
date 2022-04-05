@@ -1,13 +1,10 @@
-import { AttemptOptions, retry } from '@lifeomic/attempt';
-
 // NOTE: We use discriminated unions over "success" property
 export type GoResultSuccess<T> = { data: T; success: true };
 export type GoResultError<E extends Error = Error> = { error: E; success: false };
 export type GoResult<T, E extends Error = Error> = GoResultSuccess<T> | GoResultError<E>;
 
-export interface PromiseOptions {
+export interface GoAsyncOptions {
   readonly retries?: number;
-  readonly retryDelayMs?: number;
   readonly timeoutMs?: number;
 }
 
@@ -56,60 +53,39 @@ export const goSync = <T, E extends Error>(fn: () => T): GoResult<T, E> => {
   }
 };
 
-const retryFnWrapper = async <T, E extends Error>(
-  fn: Promise<T> | (() => Promise<T>),
-  attemptOptions: AttemptOptions<T>
-): Promise<GoResult<T, E>> => {
-  if (typeof fn === 'function') {
-    return retryFn(fn, attemptOptions);
-  }
-  return retryFn(() => fn, attemptOptions);
-};
-
-const retryFn = async <T, E extends Error>(
-  fn: () => Promise<T>,
-  attemptOptions: AttemptOptions<T>
-): Promise<GoResult<T, E>> =>
-  retry(fn, attemptOptions)
-    .then(success)
-    .catch((err) => createGoError(err));
-
-export const go = async <T, E extends Error>(
-  fn: Promise<T> | (() => Promise<T>),
-  options?: PromiseOptions
-): Promise<GoResult<T, E>> => {
-  const attemptOptions: AttemptOptions<any> = {
-    delay: options?.retryDelayMs || 200,
-    maxAttempts: (options?.retries || 0) + 1,
-    initialDelay: 0,
-    minDelay: 0,
-    maxDelay: 0,
-    factor: 0,
-    timeout: options?.timeoutMs || 0,
-    jitter: false,
-    handleError: null,
-    handleTimeout: options?.timeoutMs
-      ? async (context, options) => {
-          if (context.attemptsRemaining > 0) {
-            const res = await retryFnWrapper(fn, { ...options, maxAttempts: context.attemptsRemaining });
-
-            if (res.success) {
-              return res.data;
-            } else {
-              throw res.error;
-            }
-          }
-          throw new Error(`Operation timed out`);
-        }
-      : null,
-    beforeAttempt: null,
-    calculateDelay: null,
-  };
-
+const attempt = async <T, E extends Error>(fn: () => Promise<T>, timeoutMs?: number): Promise<GoResult<T, E>> => {
   // We need try/catch because `fn` might throw sync errors as well
   try {
-    return retryFnWrapper(fn, attemptOptions);
+    if (timeoutMs === undefined) return success(await fn());
+    else {
+      return success(
+        await Promise.race([
+          fn(),
+          new Promise((_, reject) => setTimeout(() => reject('Operation timed out'), timeoutMs)) as Promise<T>,
+        ])
+      );
+    }
   } catch (err) {
     return createGoError(err);
   }
+};
+
+export const go = async <T, E extends Error>(
+  predicate: Promise<T> | (() => Promise<T>),
+  options?: GoAsyncOptions
+): Promise<GoResult<T, E>> => {
+  const fn = typeof predicate === 'function' ? predicate : () => predicate;
+  if (!options) return attempt(fn);
+
+  const { retries, timeoutMs } = options;
+  const attempts = retries ? retries + 1 : 1;
+  let lastFailedAttemptResult: GoResultError<E> | null = null;
+  for (let i = 0; i < attempts; i++) {
+    const goRes = await attempt<T, E>(fn, timeoutMs);
+    if (goRes.success) return goRes;
+
+    lastFailedAttemptResult = goRes;
+  }
+
+  return lastFailedAttemptResult!;
 };
