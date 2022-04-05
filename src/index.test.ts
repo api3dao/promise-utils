@@ -80,18 +80,7 @@ describe('basic retry usage', () => {
     expect(res).toEqual(success(2));
   });
 
-  it('retries and resolves successful asynchronous functions', async () => {
-    jest
-      .spyOn(operations, 'successFn')
-      .mockRejectedValueOnce(new Error('Error 1'))
-      .mockRejectedValueOnce(new Error('Error 2'));
-
-    const res = await go(operations.successFn, { retries: 3 });
-    expect(operations.successFn).toHaveBeenCalledTimes(3);
-    expect(res).toEqual(success(2));
-  });
-
-  it('retries and resolves unsuccessful asynchronous functions', async () => {
+  it('retries and resolves unsuccessful asynchronous functions with the error from last retry', async () => {
     const attempts = 3;
     jest
       .spyOn(operations, 'errorFn')
@@ -135,6 +124,23 @@ describe('basic timeout usage', () => {
 
   it('resolves timed out asynchronous functions', async () => {
     const res = await go(operations.successFn, { timeoutMs: 5 });
+    expect(res).toEqual(fail(new Error('Operation timed out')));
+  });
+
+  it('shows difference between promise callback and promise value', async () => {
+    const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+    // Promise value tries to resolve THE SAME promise every attempt
+    const goVal = await go(sleep(50), { timeoutMs: 30, retries: 1 });
+    expect(goVal).toEqual(success(undefined));
+
+    // Promise callback tries to resolve NEW promise every attempt
+    const goFn = await go(() => sleep(50), { timeoutMs: 30, retries: 1 });
+    expect(goFn).toEqual(fail(new Error('Operation timed out')));
+  });
+
+  it('shows that timeout 0 means 0 ms (not infinity)', async () => {
+    const res = await go(operations.successFn, { timeoutMs: 0 });
     expect(res).toEqual(fail(new Error('Operation timed out')));
   });
 });

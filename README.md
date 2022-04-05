@@ -1,6 +1,6 @@
 # promise-utils [![ContinuousBuild](https://github.com/api3dao/promise-utils/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/api3dao/promise-utils/actions/workflows/main.yml)
 
-> A simple package for a functional and typesafe error handling
+> A simple package for a functional and typesafe error handling with zero dependencies
 
 ## Installation
 
@@ -8,7 +8,7 @@ To install this package run either:
 
 `yarn add @api3/promise-utils`
 
-or if you use npm
+or if you use npm:
 
 `npm install @api3/promise-utils --save`
 
@@ -16,7 +16,7 @@ or if you use npm
 
 The API is small and well focused on providing [more concise error handling](#motivation). The main functions of this
 package are `go` and `goSync` functions. They accept a function to execute, and additionally `go` accepts an optional
-`PromiseOptions` object as the second parameter. If the function executes without an error, a success response with the
+`GoAsyncOptions` object as the second parameter. If the function executes without an error, a success response with the
 data is returned, otherwise an error response is returned.
 
 <!-- NOTE: Keep in sync with the "documentation snippets are valid" test -->
@@ -44,11 +44,11 @@ if (!goFetchData.success) {
 }
 ```
 
-and with `PromiseOptions`:
+and with `GoAsyncOptions`:
 
 ```ts
-// The go function will retry 2 times with a 500 ms delay if fetchData fails to finish within 5 seconds
-const goFetchData = await go(fetchData('users'), { retries: 2, retryDelayMs: 500, timeoutMs: 5_000 });
+// The go function will retry 2 times if fetchData fails to finish within 5 seconds
+const goFetchData = await go(fetchData('users'), { retries: 2, timeoutMs: 5_000 });
 ...
 ```
 
@@ -72,7 +72,7 @@ The return value from the promise utils functions works very well with TypeScrip
 
 The full `promise-utils` API consists of the following functions:
 
-- `go(asyncFn, options)` - Executes the `asyncFn` and returns a response of type `GoResult`
+- `go(asyncFnOrPromise, options)` - Evaluates the `asyncFnOrPromise` and returns a response of type `GoResult`
 - `goSync(fn)` - Executes the `fn` and returns a response of type `GoResult`
 - `assertGoSuccess(goRes)` - Verifies that the `goRes` is a success response (`GoResultSuccess` type) and throws
   otherwise.
@@ -85,15 +85,18 @@ and the following Typescript types:
 - `GoResult<T> = { data: T; success: true }`
 - `GoResultSuccess<E extends Error = Error> = { error: E; success: false }`
 - `GoResultError<T, E extends Error = Error> = GoResultSuccess<T> | GoResultError<E>`
-- `PromiseOptions { readonly retries?: number; readonly retryDelayMs?: number; readonly timeoutMs?: number; }`
+- `GoAsyncOptions { readonly retries?: number; readonly timeoutMs?: number; }`
 
-The default values for `PromiseOptions` are:
+The default values for `GoAsyncOptions` are:
 
 ```ts
-{ retries: 0, retryDelay: 200, timeoutMs: 0 }
+// retries = number of retries to be made
+// timeoutMs = number of milliseconds to wait for all attempts
+{ retries: 0, timeoutMs: 0 }
 ```
 
-By default, the `timeoutMs` value of `0` means that there is no timeout limit.
+Careful, the `timeoutMs` value of `0` means timeout of 0 ms. If you want to have infinite timeout omit the key or set it
+to `undefined`.
 
 The last exported value is a `GoWrappedError` class which wraps an error which happens in go callback. The difference
 between `GoWrappedError` and regular `Error` class is that you can access `GoWrappedError.reason` to get the original
@@ -140,6 +143,12 @@ error as `unknown` or `any` (see:
 
 The error response from `go` and `goSync` always return an instance of the `Error` class. Of course, throwing custom
 errors (derived from `Error`) is supported.
+
+### Tiny API
+
+The go utils by design offer only very basic timeout and retry capabilities as these are often application specific and
+could quickly result in bloated configuration. If you are looking for more complex features, consider using one of the
+alternatives, e.g. https://github.com/lifeomic/attempt
 
 ## Limitations
 
