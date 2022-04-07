@@ -21,14 +21,14 @@ describe('basic goSync usage', () => {
 describe('basic go usage', () => {
   it('resolves successful asynchronous functions', async () => {
     const successFn = new Promise((res) => res(2));
-    const res = await go(successFn);
+    const res = await go(() => successFn);
     expect(res).toEqual(success(2));
   });
 
   it('resolves unsuccessful asynchronous functions', async () => {
     const err = new Error('Computer says no');
     const errorFn = new Promise((_res, rej) => rej(err));
-    const res = await go(errorFn);
+    const res = await go(() => errorFn);
     expect(res).toEqual(fail(err));
   });
 
@@ -37,7 +37,7 @@ describe('basic go usage', () => {
     const errorFn = new Promise(() => {
       throw err;
     });
-    const res = await go(errorFn);
+    const res = await go(() => errorFn);
     expect(res).toEqual(fail(err));
   });
 
@@ -131,7 +131,8 @@ describe('basic timeout usage', () => {
     const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
     // Promise value tries to resolve THE SAME promise every attempt
-    const goVal = await go(sleep(50), { attemptTimeoutMs: 30, retries: 1 });
+    const sleepPromise = sleep(50);
+    const goVal = await go(() => sleepPromise, { attemptTimeoutMs: 30, retries: 1 });
     expect(goVal).toEqual(success(undefined));
 
     // Promise callback tries to resolve NEW promise every attempt
@@ -399,7 +400,7 @@ describe('documentation snippets are valid', () => {
   });
 
   it('error usage', async () => {
-    const goFetchData = await go(fetchData('throw'));
+    const goFetchData = await go(() => fetchData('throw'));
     if (!goFetchData.success) {
       const error = goFetchData.error;
 
