@@ -95,38 +95,44 @@ export const go = async <T, E extends Error>(
   const { retries, timeoutMs, delay, fullTimeoutMs } = options;
 
   let fullTimeoutExceeded = false;
+  let fullTimeoutPromise = new Promise((_resolve) => {}); // Never resolves
   if (fullTimeoutMs !== undefined) {
     // Start a "full" timeout that will stop all retries after it is exceeded
-    sleep(fullTimeoutMs).then(() => {
+    fullTimeoutPromise = sleep(fullTimeoutMs).then(() => {
       fullTimeoutExceeded = true;
+      return fail(new Error('Full timeout exceeded'));
     });
   }
 
-  const attempts = retries ? retries + 1 : 1;
-  let lastFailedAttemptResult: GoResultError<E> | null = null;
-  for (let i = 0; i < attempts; i++) {
-    // This is guaranteed to be false for the first attempt
-    if (fullTimeoutExceeded) break;
+  const makeAttempts = async () => {
+    const attempts = retries ? retries + 1 : 1;
+    let lastFailedAttemptResult: GoResultError<E> | null = null;
+    for (let i = 0; i < attempts; i++) {
+      // This is guaranteed to be false for the first attempt
+      if (fullTimeoutExceeded) break;
 
-    const goRes = await attempt<T, E>(fn, timeoutMs);
-    if (goRes.success) return goRes;
+      const goRes = await attempt<T, E>(fn, timeoutMs);
+      if (goRes.success) return goRes;
 
-    lastFailedAttemptResult = goRes;
-    if (delay) {
-      switch (delay.type) {
-        case 'random': {
-          const { minDelayMs, maxDelayMs } = delay;
-          await sleep(getRandomInRange(minDelayMs, maxDelayMs));
-          break;
-        }
-        case 'static': {
-          const { delayMs } = delay;
-          await sleep(delayMs);
-          break;
+      lastFailedAttemptResult = goRes;
+      if (delay) {
+        switch (delay.type) {
+          case 'random': {
+            const { minDelayMs, maxDelayMs } = delay;
+            await sleep(getRandomInRange(minDelayMs, maxDelayMs));
+            break;
+          }
+          case 'static': {
+            const { delayMs } = delay;
+            await sleep(delayMs);
+            break;
+          }
         }
       }
     }
-  }
 
-  return lastFailedAttemptResult!;
+    return lastFailedAttemptResult!;
+  };
+
+  return Promise.race([makeAttempts(), fullTimeoutPromise]) as Promise<GoResult<T, E>>;
 };

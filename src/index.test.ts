@@ -547,4 +547,20 @@ describe('fullTimeoutMs', () => {
     expect(ticks.length).toBe(1);
     expect(ticks[0]).toBeGreaterThanOrEqual(0);
   });
+
+  it('resolves the value immediately after the timeout has exceeded', async () => {
+    const now = performance.now();
+
+    const goRes = await go(
+      async () => {
+        await new Promise((res) => setTimeout(res, 50));
+      },
+      { delay: { type: 'static', delayMs: 50 }, retries: 1, fullTimeoutMs: 20 }
+    );
+
+    const delta = performance.now() - now;
+    expect(delta).toBeGreaterThanOrEqual(20);
+    expect(delta).toBeLessThan(25); // The timeout is the minimum (not exact) time after which to stop a callback so there might be a few ms extra
+    expect(goRes).toEqual(fail(new Error('Full timeout exceeded')));
+  });
 });
