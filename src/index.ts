@@ -17,7 +17,7 @@ export interface RandomDelayOptions {
 export interface GoAsyncOptions {
   retries?: number; // Number of retries to attempt if the go callback is unsuccessful.
   attemptTimeoutMs?: number; // The timeout for each attempt.
-  totalTimeoutMs?: number; // The maximum timeout including retries and delays. No more retries are performed after this timeout.
+  totalTimeoutMs?: number; // The maximum timeout for all attempts and delays. No more retries are performed after this timeout.
   delay?: StaticDelayOptions | RandomDelayOptions; // Type of the delay before each attempt. There is no delay before the first request.
 }
 
