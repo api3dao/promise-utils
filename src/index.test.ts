@@ -512,3 +512,39 @@ describe('delay', () => {
     });
   });
 });
+
+describe('fullTimeoutMs', () => {
+  it('stops retying after the full timeout is exceeded', async () => {
+    const now = performance.now();
+    const ticks: number[] = [];
+
+    await go(
+      async () => {
+        ticks.push(performance.now() - now);
+        throw new Error();
+      },
+      { delay: { type: 'static', delayMs: 50 }, retries: 150, fullTimeoutMs: 150 }
+    );
+
+    expect(ticks.length).toBe(3);
+    expect(ticks[0]).toBeGreaterThanOrEqual(0);
+    expect(ticks[1]).toBeGreaterThanOrEqual(50);
+    expect(ticks[2]).toBeGreaterThanOrEqual(100);
+  });
+
+  it('runs the go callback at least once independently of full timeout', async () => {
+    const now = performance.now();
+    const ticks: number[] = [];
+
+    await go(
+      async () => {
+        ticks.push(performance.now() - now);
+        throw new Error();
+      },
+      { delay: { type: 'static', delayMs: 50 }, retries: 10, fullTimeoutMs: 0 }
+    );
+
+    expect(ticks.length).toBe(1);
+    expect(ticks[0]).toBeGreaterThanOrEqual(0);
+  });
+});
