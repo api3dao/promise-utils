@@ -47,8 +47,9 @@ if (!goFetchData.success) {
 and with `GoAsyncOptions`:
 
 ```ts
-// The go function will retry 2 times if fetchData fails to finish within 5 seconds
-const goFetchData = await go(fetchData('users'), { retries: 2, attemptTimeoutMs: 5_000 });
+// The `fetchData` function will be retried a maximum of 2 times on error, with each attempt having
+// a timeout of 5 seconds and a total timeout 10 seconds (shared among all attempts and delays).
+const goFetchData = await go(fetchData('users'), { retries: 2, attemptTimeoutMs: 5_000, totalTimeoutMs: 10_000 });
 ...
 ```
 
@@ -95,7 +96,7 @@ and the following Typescript types:
   interface GoAsyncOptions {
     retries?: number; // Number of retries to attempt if the go callback is unsuccessful.
     attemptTimeoutMs?: number; // The timeout for each attempt.
-    totalTimeoutMs?: number; // The maximum timeout including retries and delays. No more retries are performed after this timeout.
+    totalTimeoutMs?: number; // The maximum timeout for all attempts and delays. No more retries are performed after this timeout.
     delay?: StaticDelayOptions | RandomDelayOptions; // Type of the delay before each attempt. There is no delay before the first request.
   }
   ```
@@ -162,7 +163,7 @@ error as `unknown` or `any` (see:
 The error response from `go` and `goSync` always return an instance of the `Error` class. Of course, throwing custom
 errors (derived from `Error`) is supported.
 
-### Tiny API
+### Intentionally limited feature set
 
 The go utils by design offer only very basic timeout and retry capabilities as these are often application specific and
 could quickly result in bloated configuration. If you are looking for more complex features, consider using one of the
