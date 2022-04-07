@@ -13,11 +13,12 @@ export interface RandomDelayOptions {
   minDelayMs: number;
   maxDelayMs: number;
 }
+
 export interface GoAsyncOptions {
-  readonly retries?: number;
-  readonly timeoutMs?: number;
-  readonly fullTimeoutMs?: number;
-  readonly delay?: StaticDelayOptions | RandomDelayOptions;
+  readonly retries?: number; // Number of retries to attempt if the go callback is unsuccessful.
+  readonly timeoutMs?: number; // The timeout for each attempt.
+  readonly fullTimeoutMs?: number; // The maximum timeout including retries and delays. No more retries are performed after this timeout.
+  readonly delay?: StaticDelayOptions | RandomDelayOptions; // Type of the delay before each attempt. There is no delay before the first request.
 }
 
 export class GoWrappedError extends Error {

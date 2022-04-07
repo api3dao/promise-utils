@@ -82,18 +82,36 @@ The full `promise-utils` API consists of the following functions:
 
 and the following Typescript types:
 
-- `GoResult<T> = { data: T; success: true }`
-- `GoResultSuccess<E extends Error = Error> = { error: E; success: false }`
-- `GoResultError<T, E extends Error = Error> = GoResultSuccess<T> | GoResultError<E>`
-- `GoAsyncOptions { readonly retries?: number; readonly timeoutMs?: number; }`
-
-The default values for `GoAsyncOptions` are:
-
-```ts
-// retries = number of retries to be made
-// timeoutMs = number of milliseconds to wait for all attempts
-{ retries: 0, timeoutMs: 0 }
-```
+- ```ts
+  type GoResult<T> = { data: T; success: true };
+  ```
+- ```ts
+  type GoResultSuccess<E extends Error = Error> = { error: E; success: false };
+  ```
+- ```ts
+  type GoResultError<T, E extends Error = Error> = GoResultSuccess<T> | GoResultError<E>;
+  ```
+- ```ts
+  interface GoAsyncOptions {
+    readonly retries?: number; // Number of retries to attempt if the go callback is unsuccessful.
+    readonly timeoutMs?: number; // The timeout for each attempt.
+    readonly fullTimeoutMs?: number; // The maximum timeout including retries and delays. No more retries are performed after this timeout.
+    readonly delay?: StaticDelayOptions | RandomDelayOptions; // Type of the delay before each attempt. There is no delay before the first request.
+  }
+  ```
+- ```ts
+  interface StaticDelayOptions {
+    type: 'static';
+    delayMs: number;
+  }
+  ```
+- ```ts
+  interface RandomDelayOptions {
+    type: 'random';
+    minDelayMs: number;
+    maxDelayMs: number;
+  }
+  ```
 
 Careful, the `timeoutMs` value of `0` means timeout of 0 ms. If you want to have infinite timeout omit the key or set it
 to `undefined`.
