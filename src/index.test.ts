@@ -464,3 +464,51 @@ describe('documentation snippets are valid', () => {
     assertType<MyData>(data);
   });
 });
+
+describe('delay', () => {
+  it('only delays on retries', async () => {
+    const goRes = await go(async () => 123, { delay: { type: 'static', delayMs: 2000 } });
+    expect(goRes).toEqual(success(123));
+  }, 20); // Make the test timeout smaller then the delay
+
+  describe('random', () => {
+    it('waits for a random period of time before retry', async () => {
+      const now = performance.now();
+      const ticks: number[] = [];
+
+      jest.spyOn(global.Math, 'random').mockReturnValueOnce(0.5);
+      jest.spyOn(global.Math, 'random').mockReturnValueOnce(1);
+
+      await go(
+        async () => {
+          ticks.push(performance.now() - now);
+          throw new Error();
+        },
+        { delay: { type: 'random', minDelayMs: 0, maxDelayMs: 100 }, retries: 2 }
+      );
+
+      expect(ticks[0]).toBeGreaterThanOrEqual(0);
+      expect(ticks[1]).toBeGreaterThanOrEqual(50);
+      expect(ticks[2]).toBeGreaterThanOrEqual(150);
+    });
+  });
+
+  describe('static', () => {
+    it('waits for a fixed period of time before retry', async () => {
+      const now = performance.now();
+      const ticks: number[] = [];
+
+      await go(
+        async () => {
+          ticks.push(performance.now() - now);
+          throw new Error();
+        },
+        { delay: { type: 'static', delayMs: 100 }, retries: 2 }
+      );
+
+      expect(ticks[0]).toBeGreaterThanOrEqual(0);
+      expect(ticks[1]).toBeGreaterThanOrEqual(100);
+      expect(ticks[2]).toBeGreaterThanOrEqual(200);
+    });
+  });
+});
