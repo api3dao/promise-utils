@@ -72,7 +72,7 @@ The return value from the promise utils functions works very well with TypeScrip
 
 The full `promise-utils` API consists of the following functions:
 
-- `go(asyncFnOrPromise, options)` - Evaluates the `asyncFnOrPromise` and returns a response of type `GoResult`
+- `go(asyncFn, options)` - Executes the `asyncFn` and returns a response of type `GoResult`
 - `goSync(fn)` - Executes the `fn` and returns a response of type `GoResult`
 - `assertGoSuccess(goRes)` - Verifies that the `goRes` is a success response (`GoResultSuccess` type) and throws
   otherwise.
