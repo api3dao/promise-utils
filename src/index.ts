@@ -16,6 +16,7 @@ export interface RandomDelayOptions {
 export interface GoAsyncOptions {
   readonly retries?: number;
   readonly timeoutMs?: number;
+  readonly fullTimeoutMs?: number;
   readonly delay?: StaticDelayOptions | RandomDelayOptions;
 }
 
@@ -90,10 +91,22 @@ export const go = async <T, E extends Error>(
   const fn = typeof predicate === 'function' ? predicate : () => predicate;
   if (!options) return attempt(fn);
 
-  const { retries, timeoutMs, delay } = options;
+  const { retries, timeoutMs, delay, fullTimeoutMs } = options;
+
+  let fullTimeoutExceeded = false;
+  if (fullTimeoutMs !== undefined) {
+    // Start a "full" timeout that will stop all retries after it is exceeded
+    sleep(fullTimeoutMs).then(() => {
+      fullTimeoutExceeded = true;
+    });
+  }
+
   const attempts = retries ? retries + 1 : 1;
   let lastFailedAttemptResult: GoResultError<E> | null = null;
   for (let i = 0; i < attempts; i++) {
+    // This is guaranteed to be false for the first attempt
+    if (fullTimeoutExceeded) break;
+
     const goRes = await attempt<T, E>(fn, timeoutMs);
     if (goRes.success) return goRes;
 
