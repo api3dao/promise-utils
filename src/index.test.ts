@@ -474,7 +474,7 @@ describe('delay', () => {
 
   describe('random', () => {
     it('waits for a random period of time before retry', async () => {
-      const now = performance.now();
+      const now = Date.now();
       const ticks: number[] = [];
 
       jest.spyOn(global.Math, 'random').mockReturnValueOnce(0.5);
@@ -482,7 +482,7 @@ describe('delay', () => {
 
       await go(
         async () => {
-          ticks.push(performance.now() - now);
+          ticks.push(Date.now() - now);
           throw new Error();
         },
         { delay: { type: 'random', minDelayMs: 0, maxDelayMs: 100 }, retries: 2 }
@@ -496,12 +496,12 @@ describe('delay', () => {
 
   describe('static', () => {
     it('waits for a fixed period of time before retry', async () => {
-      const now = performance.now();
+      const now = Date.now();
       const ticks: number[] = [];
 
       await go(
         async () => {
-          ticks.push(performance.now() - now);
+          ticks.push(Date.now() - now);
           throw new Error();
         },
         { delay: { type: 'static', delayMs: 100 }, retries: 2 }
@@ -516,12 +516,12 @@ describe('delay', () => {
 
 describe('totalTimeoutMs', () => {
   it('stops retying after the full timeout is exceeded', async () => {
-    const now = performance.now();
+    const now = Date.now();
     const ticks: number[] = [];
 
     await go(
       async () => {
-        ticks.push(performance.now() - now);
+        ticks.push(Date.now() - now);
         throw new Error();
       },
       { delay: { type: 'static', delayMs: 50 }, retries: 150, totalTimeoutMs: 150 }
@@ -534,12 +534,12 @@ describe('totalTimeoutMs', () => {
   });
 
   it('runs the go callback at least once independently of full timeout', async () => {
-    const now = performance.now();
+    const now = Date.now();
     const ticks: number[] = [];
 
     await go(
       async () => {
-        ticks.push(performance.now() - now);
+        ticks.push(Date.now() - now);
         throw new Error();
       },
       { delay: { type: 'static', delayMs: 50 }, retries: 10, totalTimeoutMs: 0 }
@@ -550,7 +550,7 @@ describe('totalTimeoutMs', () => {
   });
 
   it('resolves the value immediately after the timeout has exceeded', async () => {
-    const now = performance.now();
+    const now = Date.now();
 
     const goRes = await go(
       async () => {
@@ -559,7 +559,7 @@ describe('totalTimeoutMs', () => {
       { delay: { type: 'static', delayMs: 50 }, retries: 1, totalTimeoutMs: 20 }
     );
 
-    const delta = performance.now() - now;
+    const delta = Date.now() - now;
     expect(delta).toBeGreaterThanOrEqual(20);
     expect(delta).toBeLessThan(25); // The timeout is the minimum (not exact) time after which to stop a callback so there might be a few ms extra
     expect(goRes).toEqual(fail(new Error('Full timeout exceeded')));
