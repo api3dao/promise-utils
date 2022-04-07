@@ -48,7 +48,7 @@ and with `GoAsyncOptions`:
 
 ```ts
 // The go function will retry 2 times if fetchData fails to finish within 5 seconds
-const goFetchData = await go(fetchData('users'), { retries: 2, timeoutMs: 5_000 });
+const goFetchData = await go(fetchData('users'), { retries: 2, attemptTimeoutMs: 5_000 });
 ...
 ```
 
@@ -94,8 +94,8 @@ and the following Typescript types:
 - ```ts
   interface GoAsyncOptions {
     readonly retries?: number; // Number of retries to attempt if the go callback is unsuccessful.
-    readonly timeoutMs?: number; // The timeout for each attempt.
-    readonly fullTimeoutMs?: number; // The maximum timeout including retries and delays. No more retries are performed after this timeout.
+    readonly attemptTimeoutMs?: number; // The timeout for each attempt.
+    readonly totalTimeoutMs?: number; // The maximum timeout including retries and delays. No more retries are performed after this timeout.
     readonly delay?: StaticDelayOptions | RandomDelayOptions; // Type of the delay before each attempt. There is no delay before the first request.
   }
   ```
@@ -113,8 +113,8 @@ and the following Typescript types:
   }
   ```
 
-Careful, the `timeoutMs` value of `0` means timeout of 0 ms. If you want to have infinite timeout omit the key or set it
-to `undefined`.
+Careful, the `attemptTimeoutMs` value of `0` means timeout of 0 ms. If you want to have infinite timeout omit the key or
+set it to `undefined`.
 
 The last exported value is a `GoWrappedError` class which wraps an error which happens in go callback. The difference
 between `GoWrappedError` and regular `Error` class is that you can access `GoWrappedError.reason` to get the original

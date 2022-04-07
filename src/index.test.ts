@@ -113,17 +113,17 @@ describe('basic timeout usage', () => {
   };
 
   it('resolves successful asynchronous functions within the timout limit', async () => {
-    const res = await go(operations.successFn, { timeoutMs: 20 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: 20 });
     expect(res).toEqual(success(2));
   });
 
   it('resolves unsuccessful asynchronous functions within the timout limit', async () => {
-    const res = await go(operations.errorFn, { timeoutMs: 20 });
+    const res = await go(operations.errorFn, { attemptTimeoutMs: 20 });
     expect(res).toEqual(fail(new Error('Computer says no')));
   });
 
   it('resolves timed out asynchronous functions', async () => {
-    const res = await go(operations.successFn, { timeoutMs: 5 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: 5 });
     expect(res).toEqual(fail(new Error('Operation timed out')));
   });
 
@@ -131,16 +131,16 @@ describe('basic timeout usage', () => {
     const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
     // Promise value tries to resolve THE SAME promise every attempt
-    const goVal = await go(sleep(50), { timeoutMs: 30, retries: 1 });
+    const goVal = await go(sleep(50), { attemptTimeoutMs: 30, retries: 1 });
     expect(goVal).toEqual(success(undefined));
 
     // Promise callback tries to resolve NEW promise every attempt
-    const goFn = await go(() => sleep(50), { timeoutMs: 30, retries: 1 });
+    const goFn = await go(() => sleep(50), { attemptTimeoutMs: 30, retries: 1 });
     expect(goFn).toEqual(fail(new Error('Operation timed out')));
   });
 
   it('shows that timeout 0 means 0 ms (not infinity)', async () => {
-    const res = await go(operations.successFn, { timeoutMs: 0 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: 0 });
     expect(res).toEqual(fail(new Error('Operation timed out')));
   });
 });
@@ -157,12 +157,12 @@ describe('basic retry and timeout usage', () => {
   };
 
   it('resolves successful asynchronous functions', async () => {
-    const res = await go(operations.successFn, { timeoutMs: 50, retries: 3 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: 50, retries: 3 });
     expect(res).toEqual(success(2));
   });
 
   it('resolves unsuccessful asynchronous functions', async () => {
-    const res = await go(operations.errorFn, { timeoutMs: 50, retries: 3 });
+    const res = await go(operations.errorFn, { attemptTimeoutMs: 50, retries: 3 });
     expect(res).toEqual(fail(new Error('Computer says no')));
   });
 
@@ -172,7 +172,7 @@ describe('basic retry and timeout usage', () => {
       .mockRejectedValueOnce(new Error('Error 1'))
       .mockRejectedValueOnce(new Error('Error 2'));
 
-    const res = await go(operations.successFn, { timeoutMs: 100, retries: 3 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: 100, retries: 3 });
     expect(operations.successFn).toHaveBeenCalledTimes(3);
     expect(res).toEqual(success(2));
   });
@@ -183,7 +183,7 @@ describe('basic retry and timeout usage', () => {
       .mockRejectedValueOnce(new Error('Error 1'))
       .mockRejectedValueOnce(new Error('Error 2'));
 
-    const res = await go(operations.errorFn, { timeoutMs: 100, retries: 2 });
+    const res = await go(operations.errorFn, { attemptTimeoutMs: 100, retries: 2 });
     expect(operations.errorFn).toHaveBeenCalledTimes(3);
     expect(res).toEqual(fail(new Error('Computer says no')));
   });
@@ -192,7 +192,7 @@ describe('basic retry and timeout usage', () => {
     const attempts = 3;
     jest.spyOn(operations, 'successFn');
 
-    const res = await go(operations.successFn, { timeoutMs: 5, retries: 2 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: 5, retries: 2 });
     expect(operations.successFn).toHaveBeenCalledTimes(attempts);
     expect(res).toEqual(fail(new Error('Operation timed out')));
   });
@@ -513,7 +513,7 @@ describe('delay', () => {
   });
 });
 
-describe('fullTimeoutMs', () => {
+describe('totalTimeoutMs', () => {
   it('stops retying after the full timeout is exceeded', async () => {
     const now = performance.now();
     const ticks: number[] = [];
@@ -523,7 +523,7 @@ describe('fullTimeoutMs', () => {
         ticks.push(performance.now() - now);
         throw new Error();
       },
-      { delay: { type: 'static', delayMs: 50 }, retries: 150, fullTimeoutMs: 150 }
+      { delay: { type: 'static', delayMs: 50 }, retries: 150, totalTimeoutMs: 150 }
     );
 
     expect(ticks.length).toBe(3);
@@ -541,7 +541,7 @@ describe('fullTimeoutMs', () => {
         ticks.push(performance.now() - now);
         throw new Error();
       },
-      { delay: { type: 'static', delayMs: 50 }, retries: 10, fullTimeoutMs: 0 }
+      { delay: { type: 'static', delayMs: 50 }, retries: 10, totalTimeoutMs: 0 }
     );
 
     expect(ticks.length).toBe(1);
@@ -555,7 +555,7 @@ describe('fullTimeoutMs', () => {
       async () => {
         await new Promise((res) => setTimeout(res, 50));
       },
-      { delay: { type: 'static', delayMs: 50 }, retries: 1, fullTimeoutMs: 20 }
+      { delay: { type: 'static', delayMs: 50 }, retries: 1, totalTimeoutMs: 20 }
     );
 
     const delta = performance.now() - now;

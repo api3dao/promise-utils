@@ -16,8 +16,8 @@ export interface RandomDelayOptions {
 
 export interface GoAsyncOptions {
   readonly retries?: number; // Number of retries to attempt if the go callback is unsuccessful.
-  readonly timeoutMs?: number; // The timeout for each attempt.
-  readonly fullTimeoutMs?: number; // The maximum timeout including retries and delays. No more retries are performed after this timeout.
+  readonly attemptTimeoutMs?: number; // The timeout for each attempt.
+  readonly totalTimeoutMs?: number; // The maximum timeout including retries and delays. No more retries are performed after this timeout.
   readonly delay?: StaticDelayOptions | RandomDelayOptions; // Type of the delay before each attempt. There is no delay before the first request.
 }
 
@@ -73,12 +73,15 @@ const getRandomInRange = (min: number, max: number) => {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const timeout = (ms: number) => new Promise((_, reject) => setTimeout(() => reject('Operation timed out'), ms));
 
-const attempt = async <T, E extends Error>(fn: () => Promise<T>, timeoutMs?: number): Promise<GoResult<T, E>> => {
+const attempt = async <T, E extends Error>(
+  fn: () => Promise<T>,
+  attemptTimeoutMs?: number
+): Promise<GoResult<T, E>> => {
   // We need try/catch because `fn` might throw sync errors as well
   try {
-    if (timeoutMs === undefined) return success(await fn());
+    if (attemptTimeoutMs === undefined) return success(await fn());
     else {
-      return success(await Promise.race([fn(), timeout(timeoutMs) as Promise<T>]));
+      return success(await Promise.race([fn(), timeout(attemptTimeoutMs) as Promise<T>]));
     }
   } catch (err) {
     return createGoError(err);
@@ -92,13 +95,13 @@ export const go = async <T, E extends Error>(
   const fn = typeof predicate === 'function' ? predicate : () => predicate;
   if (!options) return attempt(fn);
 
-  const { retries, timeoutMs, delay, fullTimeoutMs } = options;
+  const { retries, attemptTimeoutMs, delay, totalTimeoutMs } = options;
 
   let fullTimeoutExceeded = false;
   let fullTimeoutPromise = new Promise((_resolve) => {}); // Never resolves
-  if (fullTimeoutMs !== undefined) {
+  if (totalTimeoutMs !== undefined) {
     // Start a "full" timeout that will stop all retries after it is exceeded
-    fullTimeoutPromise = sleep(fullTimeoutMs).then(() => {
+    fullTimeoutPromise = sleep(totalTimeoutMs).then(() => {
       fullTimeoutExceeded = true;
       return fail(new Error('Full timeout exceeded'));
     });
@@ -111,7 +114,7 @@ export const go = async <T, E extends Error>(
       // This is guaranteed to be false for the first attempt
       if (fullTimeoutExceeded) break;
 
-      const goRes = await attempt<T, E>(fn, timeoutMs);
+      const goRes = await attempt<T, E>(fn, attemptTimeoutMs);
       if (goRes.success) return goRes;
 
       lastFailedAttemptResult = goRes;
