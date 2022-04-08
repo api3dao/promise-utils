@@ -89,10 +89,9 @@ const attempt = async <T, E extends Error>(
 };
 
 export const go = async <T, E extends Error>(
-  predicate: () => Promise<T>,
+  fn: () => Promise<T>,
   options?: GoAsyncOptions
 ): Promise<GoResult<T, E>> => {
-  const fn = typeof predicate === 'function' ? predicate : () => predicate;
   if (!options) return attempt(fn);
 
   const { retries, attemptTimeoutMs, delay, totalTimeoutMs } = options;
