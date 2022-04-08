@@ -1,6 +1,6 @@
 {
   "name": "@api3/promise-utils",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "./build/cjs/index.js",
   "module": "./build/esm/index.js",
   "browser": "./build/es6/index.js",
