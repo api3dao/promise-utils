@@ -70,20 +70,66 @@ const getRandomInRange = (min: number, max: number) => {
   return Math.random() * (max - min) + min;
 };
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const timeout = (ms: number) => new Promise((_, reject) => setTimeout(() => reject('Operation timed out'), ms));
+interface CancellableTimeout {
+  cancel: () => void;
+  promise: Promise<any>;
+}
+const cancellableSleep = (ms: number) => {
+  let resolveFn: any;
+  let timeoutId: any;
+  const promise = new Promise((resolve) => {
+    resolveFn = resolve;
+    timeoutId = setTimeout(resolve, ms);
+  });
+
+  const cancel = () => {
+    clearTimeout(timeoutId);
+    resolveFn();
+  };
+
+  return {
+    promise,
+    cancel,
+  };
+};
+const cancellableTimeout = (ms: number): CancellableTimeout => {
+  let rejectFn: any;
+  let timeoutId: any;
+  const promise = new Promise((_, reject) => {
+    rejectFn = reject;
+    timeoutId = setTimeout(() => reject('Operation timed out'), ms);
+  });
+
+  const cancel = () => {
+    clearTimeout(timeoutId);
+    rejectFn();
+  };
+
+  return {
+    promise,
+    cancel,
+  };
+};
 
 const attempt = async <T, E extends Error>(
   fn: () => Promise<T>,
   attemptTimeoutMs?: number
 ): Promise<GoResult<T, E>> => {
+  let timeout: CancellableTimeout | null = null;
+
   // We need try/catch because `fn` might throw sync errors as well
   try {
     if (attemptTimeoutMs === undefined) return success(await fn());
     else {
-      return success(await Promise.race([fn(), timeout(attemptTimeoutMs) as Promise<T>]));
+      timeout = cancellableTimeout(attemptTimeoutMs);
+      const result = await Promise.race([fn(), timeout.promise]);
+      timeout.cancel();
+      return success(result);
     }
   } catch (err) {
+    if (timeout?.cancel) {
+      timeout.cancel();
+    }
     return createGoError(err);
   }
 };
@@ -97,15 +143,19 @@ export const go = async <T, E extends Error>(
   const { retries, attemptTimeoutMs, delay, totalTimeoutMs } = options;
 
   let fullTimeoutExceeded = false;
+  let totalTimeoutCancellable: CancellableTimeout | null = null;
   let fullTimeoutPromise = new Promise((_resolve) => {}); // Never resolves
   if (totalTimeoutMs !== undefined) {
     // Start a "full" timeout that will stop all retries after it is exceeded
-    fullTimeoutPromise = sleep(totalTimeoutMs).then(() => {
+    totalTimeoutCancellable = cancellableSleep(totalTimeoutMs);
+    fullTimeoutPromise = totalTimeoutCancellable.promise.then(() => {
       fullTimeoutExceeded = true;
       return fail(new Error('Full timeout exceeded'));
     });
   }
 
+  // Typing as "any" because TS has troubles understanding that the value can be non-null
+  let delayCancellable: any;
   const makeAttempts = async () => {
     const attempts = retries ? retries + 1 : 1;
     let lastFailedAttemptResult: GoResultError<E> | null = null;
@@ -121,12 +171,14 @@ export const go = async <T, E extends Error>(
         switch (delay.type) {
           case 'random': {
             const { minDelayMs, maxDelayMs } = delay;
-            await sleep(getRandomInRange(minDelayMs, maxDelayMs));
+            delayCancellable = cancellableSleep(getRandomInRange(minDelayMs, maxDelayMs));
+            await delayCancellable.promise;
             break;
           }
           case 'static': {
             const { delayMs } = delay;
-            await sleep(delayMs);
+            delayCancellable = cancellableSleep(delayMs);
+            await delayCancellable.promise;
             break;
           }
         }
@@ -136,5 +188,9 @@ export const go = async <T, E extends Error>(
     return lastFailedAttemptResult!;
   };
 
-  return Promise.race([makeAttempts(), fullTimeoutPromise]) as Promise<GoResult<T, E>>;
+  const result = await Promise.race([makeAttempts(), fullTimeoutPromise]);
+  if (totalTimeoutCancellable?.cancel) totalTimeoutCancellable.cancel();
+  if (delayCancellable?.cancel) delayCancellable.cancel();
+
+  return result as Promise<GoResult<T, E>>;
 };
