@@ -1,6 +1,11 @@
 import { go, goSync, success, fail, assertGoSuccess, assertGoError, GoWrappedError } from './index';
 import { assertType, Equal } from 'type-plus';
 
+const expectToBeAround = (actual: number, expected: number, range = 10) => {
+  expect(actual).toBeGreaterThanOrEqual(expected - range);
+  expect(actual).toBeLessThanOrEqual(expected + range);
+};
+
 describe('basic goSync usage', () => {
   it('resolves successful synchronous functions', () => {
     const res = goSync(() => 2 + 2);
@@ -488,9 +493,10 @@ describe('delay', () => {
         { delay: { type: 'random', minDelayMs: 0, maxDelayMs: 100 }, retries: 2 }
       );
 
-      expect(ticks[0]).toBeGreaterThanOrEqual(0);
-      expect(ticks[1]).toBeGreaterThanOrEqual(50);
-      expect(ticks[2]).toBeGreaterThanOrEqual(150);
+      expect(ticks.length).toBe(3);
+      expectToBeAround(ticks[0]!, 0);
+      expectToBeAround(ticks[1]!, 50);
+      expectToBeAround(ticks[2]!, 150);
     });
   });
 
@@ -504,12 +510,13 @@ describe('delay', () => {
           ticks.push(Date.now() - now);
           throw new Error();
         },
-        { delay: { type: 'static', delayMs: 100 }, retries: 2 }
+        { delay: { type: 'static', delayMs: 50 }, retries: 2 }
       );
 
-      expect(ticks[0]).toBeGreaterThanOrEqual(0);
-      expect(ticks[1]).toBeGreaterThanOrEqual(100);
-      expect(ticks[2]).toBeGreaterThanOrEqual(200);
+      expect(ticks.length).toBe(3);
+      expectToBeAround(ticks[0]!, 0);
+      expectToBeAround(ticks[1]!, 50);
+      expectToBeAround(ticks[2]!, 100);
     });
   });
 });
@@ -528,9 +535,9 @@ describe('totalTimeoutMs', () => {
     );
 
     expect(ticks.length).toBe(3);
-    expect(ticks[0]).toBeGreaterThanOrEqual(0);
-    expect(ticks[1]).toBeGreaterThanOrEqual(50);
-    expect(ticks[2]).toBeGreaterThanOrEqual(100);
+    expectToBeAround(ticks[0]!, 0);
+    expectToBeAround(ticks[1]!, 50);
+    expectToBeAround(ticks[2]!, 100);
   });
 
   it('runs the go callback at least once independently of full timeout', async () => {
@@ -546,7 +553,7 @@ describe('totalTimeoutMs', () => {
     );
 
     expect(ticks.length).toBe(1);
-    expect(ticks[0]).toBeGreaterThanOrEqual(0);
+    expectToBeAround(ticks[0]!, 0);
   });
 
   it('resolves the value immediately after the timeout has exceeded', async () => {
@@ -560,8 +567,7 @@ describe('totalTimeoutMs', () => {
     );
 
     const delta = Date.now() - now;
-    expect(delta).toBeGreaterThanOrEqual(20);
-    expect(delta).toBeLessThan(25); // The timeout is the minimum (not exact) time after which to stop a callback so there might be a few ms extra
+    expectToBeAround(delta, 20);
     expect(goRes).toEqual(fail(new Error('Full timeout exceeded')));
   });
 });
