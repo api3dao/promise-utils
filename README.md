@@ -36,7 +36,7 @@ or:
 ```ts
 // Imagine an async function for fetching API data
 // If the fetch data is a non class function returning a promise, you can drop the arrow function
-const goFetchData = await go(fetchData('users'));
+const goFetchData = await go(() => fetchData('users'));
 // The "goFetchData" value is either: {success: true, data: ...} or {success: false, error: ...}
 if (!goFetchData.success) {
   const error = goFetchData.error
@@ -49,7 +49,7 @@ and with `GoAsyncOptions`:
 ```ts
 // The `fetchData` function will be retried a maximum of 2 times on error, with each attempt having
 // a timeout of 5 seconds and a total timeout 10 seconds (shared among all attempts and delays).
-const goFetchData = await go(fetchData('users'), { retries: 2, attemptTimeoutMs: 5_000, totalTimeoutMs: 10_000 });
+const goFetchData = await go(() => fetchData('users'), { retries: 2, attemptTimeoutMs: 5_000, totalTimeoutMs: 10_000 });
 ...
 ```
 
