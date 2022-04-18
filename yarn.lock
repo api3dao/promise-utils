@@ -2443,10 +2443,10 @@ type-fest@^0.21.3:
   resolved "https://registry.yarnpkg.com/type-fest/-/type-fest-0.21.3.tgz#d260a24b0198436e133fa26a524a6d65fa3b2e37"
   integrity sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==
 
-type-plus@^4.8.1:
-  version "4.8.1"
-  resolved "https://registry.yarnpkg.com/type-plus/-/type-plus-4.8.1.tgz#ef286c2f09ed71f2f4eac4b7183503487e487972"
-  integrity sha512-aU4XNdYyYTeVTK3ikUBk0x4wJw9UrqwxvWuI0zvtqm/2Pi7wgsLINQSMnjqDh2qlutF8K4s+Mxp4JvrwlWtROA==
+type-plus@^4.9.0:
+  version "4.9.0"
+  resolved "https://registry.yarnpkg.com/type-plus/-/type-plus-4.9.0.tgz#5e6f11cd9e8f12fbda1b5cdebc6762e4443d3eba"
+  integrity sha512-MTG+1YG8+/UHS0cIiS2OvXup3AZHUYYTlgnHxwbeglhnyskWOOtuC4Q7iyL0Am3nioqaPGRZR2LddqlHIvRWFw==
   dependencies:
     tersify "^3.8.2"
     unpartial "^0.6.4"
