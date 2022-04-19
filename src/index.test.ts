@@ -6,6 +6,11 @@ const expectToBeAround = (actual: number, expected: number, range = 10) => {
   expect(actual).toBeLessThanOrEqual(expected + range);
 };
 
+const resolveAfter = <T>(ms: number, value?: T): Promise<T> =>
+  new Promise((resolve) => setTimeout(() => resolve(value as T), ms));
+const rejectAfter = <T>(ms: number, value?: T): Promise<never> =>
+  new Promise((_, reject) => setTimeout(() => reject(value), ms));
+
 describe('basic goSync usage', () => {
   it('resolves successful synchronous functions', () => {
     const res = goSync(() => 2 + 2);
@@ -108,13 +113,8 @@ describe('basic retry usage', () => {
 
 describe('basic timeout usage', () => {
   const operations = {
-    successFn: () =>
-      new Promise((res) =>
-        setTimeout(() => {
-          res(2);
-        }, 10)
-      ),
-    errorFn: () => new Promise((_res, rej) => setTimeout(() => rej(new Error('Computer says no')), 10)),
+    successFn: () => resolveAfter(10, 2),
+    errorFn: () => rejectAfter(10, new Error('Computer says no')),
   };
 
   it('resolves successful asynchronous functions within the timout limit', async () => {
@@ -133,15 +133,13 @@ describe('basic timeout usage', () => {
   });
 
   it('shows difference between promise callback and promise value', async () => {
-    const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
-
     // Promise value tries to resolve THE SAME promise every attempt
-    const sleepPromise = sleep(50);
+    const sleepPromise = resolveAfter(50);
     const goVal = await go(() => sleepPromise, { attemptTimeoutMs: 30, retries: 1 });
     expect(goVal).toEqual(success(undefined));
 
     // Promise callback tries to resolve NEW promise every attempt
-    const goFn = await go(() => sleep(50), { attemptTimeoutMs: 30, retries: 1 });
+    const goFn = await go(() => resolveAfter(50), { attemptTimeoutMs: 30, retries: 1 });
     expect(goFn).toEqual(fail(new Error('Operation timed out')));
   });
 
@@ -153,13 +151,8 @@ describe('basic timeout usage', () => {
 
 describe('basic retry and timeout usage', () => {
   const operations = {
-    successFn: () =>
-      new Promise((res) =>
-        setTimeout(() => {
-          res(2);
-        }, 20)
-      ),
-    errorFn: () => new Promise((_res, rej) => setTimeout(() => rej(new Error('Computer says no')), 20)),
+    successFn: () => resolveAfter(20, 2),
+    errorFn: () => rejectAfter(20, new Error('Computer says no')),
   };
 
   it('resolves successful asynchronous functions', async () => {
@@ -561,7 +554,7 @@ describe('totalTimeoutMs', () => {
 
     const goRes = await go(
       async () => {
-        await new Promise((res) => setTimeout(res, 50));
+        await resolveAfter(50);
       },
       { delay: { type: 'static', delayMs: 50 }, retries: 1, totalTimeoutMs: 20 }
     );
@@ -597,7 +590,7 @@ describe('afterAttempt', () => {
 
     await go(
       async () => {
-        await new Promise((res) => setTimeout(res, 50));
+        await resolveAfter(50);
       },
       { retries: 3, totalTimeoutMs: 20, afterAttempt }
     );
@@ -612,12 +605,12 @@ describe('afterAttempt', () => {
 
       await go(
         async () => {
-          await new Promise((res) => setTimeout(res, 20));
+          await resolveAfter(20);
         },
         { attemptTimeoutMs: 10, afterAttempt }
       );
       // Make sure the attempt inside the go function above is completed
-      await new Promise((res) => setTimeout(res, 30));
+      await resolveAfter(30);
 
       expect(afterAttempt).toHaveBeenCalledTimes(1);
       expect(afterAttempt).toHaveBeenCalledWith({ error: new Error('Operation timed out'), success: false });
@@ -628,12 +621,12 @@ describe('afterAttempt', () => {
 
       await go(
         async () => {
-          await new Promise((res) => setTimeout(res, 20));
+          await resolveAfter(20);
         },
         { totalTimeoutMs: 10, afterAttempt }
       );
       // Make sure the attempt inside the go function above is completed
-      await new Promise((res) => setTimeout(res, 30));
+      await resolveAfter(30);
 
       expect(afterAttempt).toHaveBeenCalledTimes(1);
       expect(afterAttempt).toHaveBeenCalledWith({ error: new Error('Full timeout exceeded'), success: false });
@@ -644,12 +637,12 @@ describe('afterAttempt', () => {
 
       await go(
         async () => {
-          await new Promise((res) => setTimeout(res, 20));
+          await resolveAfter(20);
         },
         { retries: 2, attemptTimeoutMs: 10, totalTimeoutMs: 25, afterAttempt }
       );
       // Make sure the attempt inside the go function above is completed
-      await new Promise((res) => setTimeout(res, 50));
+      await resolveAfter(50);
 
       expect(afterAttempt).toHaveBeenCalledTimes(3);
       expect(afterAttempt).toHaveBeenNthCalledWith(1, { error: new Error('Operation timed out'), success: false });
@@ -686,7 +679,7 @@ describe('afterAttempt', () => {
         afterAttempt: async (goRes) => {
           log.push(`afterAttempt: ${JSON.stringify(goRes)}`);
 
-          await new Promise((res) => setTimeout(res, 20));
+          await resolveAfter(20);
 
           log.push(`afterAttempt (after sleep): ${JSON.stringify(goRes)}`);
         },
@@ -699,7 +692,7 @@ describe('afterAttempt', () => {
       'go callback: fail2',
       'afterAttempt: {"success":false,"error":{}}',
     ]);
-    await new Promise((res) => setTimeout(res, 50)); // We need to wait for unfinished afterAttempt callbacks
+    await resolveAfter(50); // We need to wait for unfinished afterAttempt callbacks
     expect(log).toEqual([
       'go callback: fail1',
       'afterAttempt: {"success":false,"error":{}}',
