@@ -93,12 +93,12 @@ and the following Typescript types:
   type GoResultError<T, E extends Error = Error> = GoResultSuccess<T> | GoResultError<E>;
   ```
 - ```ts
-  interface GoAsyncOptions<T = unknown, E extends Error = Error> {
+  interface GoAsyncOptions<E extends Error = Error> {
     retries?: number; // Number of retries to attempt if the go callback is unsuccessful.
     attemptTimeoutMs?: number; // The timeout for each attempt.
     totalTimeoutMs?: number; // The maximum timeout for all attempts and delays. No more retries are performed after this timeout.
     delay?: StaticDelayOptions | RandomDelayOptions; // Type of the delay before each attempt. There is no delay before the first request.
-    afterAttempt?: (goRes: GoResult<T, E>) => void; // Callback invoked after each attempt is completed (either successfully or not)
+    afterFailedAttempt?: (goRes: GoResultError<E>) => void; // Callback invoked after each failed attempt is completed
   }
   ```
 - ```ts
