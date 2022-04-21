@@ -19,7 +19,7 @@ export interface GoAsyncOptions<E extends Error = Error> {
   attemptTimeoutMs?: number; // The timeout for each attempt.
   totalTimeoutMs?: number; // The maximum timeout for all attempts and delays. No more retries are performed after this timeout.
   delay?: StaticDelayOptions | RandomDelayOptions; // Type of the delay before each attempt. There is no delay before the first request.
-  afterFailedAttempt?: (goRes: GoResultError<E>) => void; // Callback invoked after each failed attempt is completed
+  afterFailedAttempt?: (goRes: GoResultError<E>) => void; // Callback invoked after each failed attempt is completed. This callback does not fire for the last attempt or when a "totalTimeoutMs" is exceeded (these should be handled explicitly with the result of "go" call).
 }
 
 export class GoWrappedError extends Error {
@@ -152,16 +152,6 @@ export const go = async <T, E extends Error>(
     fullTimeoutPromise = totalTimeoutCancellable.promise.then(() => {
       const goRes = fail(new Error('Full timeout exceeded'));
       fullTimeoutExceededGoResult = goRes;
-
-      // Ignore the result of afterFailedAttempt callback
-      //
-      // NOTE: The casting is technically not valid (because user might expect a custom E type and we use regular Error
-      // class), but the assumption is that when users provide explicit types they expect the timeout will not happen.
-      //
-      // Alternatively, we could type the result as "GoResult<T, E | Error>" but users would need to explicitely check
-      // if the error is the class they expected (which we do not want).
-      if (afterFailedAttempt) goSync(() => afterFailedAttempt(goRes as GoResultError<E>));
-
       return goRes;
     });
   }
@@ -177,11 +167,10 @@ export const go = async <T, E extends Error>(
       // This is guaranteed to be false for the first attempt.
       if (fullTimeoutExceededGoResult) break;
       const goRes = await attempt<T, E>(fn, attemptTimeoutMs);
-      // Return early if the timeout is exceeded not to cause any side effects (such as calling "afterAttemp" function)
+      // Return early if the timeout is exceeded not to cause any side effects (such as calling "afterFailedAttempt" function)
       if (fullTimeoutExceededGoResult) break;
 
-      // Ignore the result of afterFailedAttempt callback
-      if (!goRes.success && afterFailedAttempt) goSync(() => afterFailedAttempt(goRes));
+      if (i !== attempts - 1 && !goRes.success && afterFailedAttempt) goSync(() => afterFailedAttempt(goRes));
       if (goRes.success) return goRes;
 
       lastFailedAttemptResult = goRes;

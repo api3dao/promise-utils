@@ -566,11 +566,11 @@ describe('totalTimeoutMs', () => {
 });
 
 describe('afterFailedAttempt', () => {
-  it('calls the function after every unsuccessfull attempt', async () => {
+  it('calls the function after every unsuccessfull attempt except last', async () => {
     const afterFailedAttempt = jest.fn();
 
     let counter = 0;
-    await go(
+    const goRes = await go(
       async () => {
         counter++;
         throw new Error('fail' + counter);
@@ -578,25 +578,25 @@ describe('afterFailedAttempt', () => {
       { retries: 3, afterFailedAttempt }
     );
 
-    expect(afterFailedAttempt).toBeCalledTimes(4);
-    expect(afterFailedAttempt).toHaveBeenNthCalledWith(1, { error: new Error('fail1'), success: false });
-    expect(afterFailedAttempt).toHaveBeenNthCalledWith(2, { error: new Error('fail2'), success: false });
-    expect(afterFailedAttempt).toHaveBeenNthCalledWith(3, { error: new Error('fail3'), success: false });
-    expect(afterFailedAttempt).toHaveBeenNthCalledWith(4, { error: new Error('fail4'), success: false });
+    expect(afterFailedAttempt).toBeCalledTimes(3);
+    expect(afterFailedAttempt).toHaveBeenNthCalledWith(1, fail(new Error('fail1')));
+    expect(afterFailedAttempt).toHaveBeenNthCalledWith(2, fail(new Error('fail2')));
+    expect(afterFailedAttempt).toHaveBeenNthCalledWith(3, fail(new Error('fail3')));
+    expect(goRes).toEqual(fail(new Error('fail4')));
   });
 
-  it('triggers the callback after total timeout has been exceeded', async () => {
+  it('does not trigger the callback after total timeout has been exceeded', async () => {
     const afterFailedAttempt = jest.fn();
 
-    await go(
+    const goRes = await go(
       async () => {
         await resolveAfter(50);
       },
       { retries: 3, totalTimeoutMs: 20, afterFailedAttempt }
     );
 
-    expect(afterFailedAttempt).toHaveBeenCalledTimes(1);
-    expect(afterFailedAttempt).toHaveBeenCalledWith({ error: new Error('Full timeout exceeded'), success: false });
+    expect(afterFailedAttempt).toHaveBeenCalledTimes(0);
+    expect(goRes).toEqual(fail(new Error('Full timeout exceeded')));
   });
 
   it('does not call the callback after successful attempt', async () => {
@@ -607,11 +607,11 @@ describe('afterFailedAttempt', () => {
     expect(afterFailedAttempt).toHaveBeenCalledTimes(0);
   });
 
-  describe('calls only once for unsuccessfull attempt', () => {
+  describe('does not call for last unsuccessfull attempt', () => {
     it('and attempt timeout', async () => {
       const afterFailedAttempt = jest.fn();
 
-      await go(
+      const goRes = await go(
         async () => {
           await resolveAfter(20);
         },
@@ -620,14 +620,14 @@ describe('afterFailedAttempt', () => {
       // Make sure the attempt inside the go function above is completed
       await resolveAfter(30);
 
-      expect(afterFailedAttempt).toHaveBeenCalledTimes(1);
-      expect(afterFailedAttempt).toHaveBeenCalledWith({ error: new Error('Operation timed out'), success: false });
+      expect(afterFailedAttempt).toHaveBeenCalledTimes(0);
+      expect(goRes).toEqual(fail(new Error('Operation timed out')));
     });
 
     it('and total timeout', async () => {
       const afterFailedAttempt = jest.fn();
 
-      await go(
+      const goRes = await go(
         async () => {
           await resolveAfter(20);
         },
@@ -636,14 +636,14 @@ describe('afterFailedAttempt', () => {
       // Make sure the attempt inside the go function above is completed
       await resolveAfter(30);
 
-      expect(afterFailedAttempt).toHaveBeenCalledTimes(1);
-      expect(afterFailedAttempt).toHaveBeenCalledWith({ error: new Error('Full timeout exceeded'), success: false });
+      expect(afterFailedAttempt).toHaveBeenCalledTimes(0);
+      expect(goRes).toEqual(fail(new Error('Full timeout exceeded')));
     });
 
     it('both attemp timeout and total timeout', async () => {
       const afterFailedAttempt = jest.fn();
 
-      await go(
+      const goRes = await go(
         async () => {
           await resolveAfter(20);
         },
@@ -652,19 +652,10 @@ describe('afterFailedAttempt', () => {
       // Make sure the attempt inside the go function above is completed
       await resolveAfter(50);
 
-      expect(afterFailedAttempt).toHaveBeenCalledTimes(3);
-      expect(afterFailedAttempt).toHaveBeenNthCalledWith(1, {
-        error: new Error('Operation timed out'),
-        success: false,
-      });
-      expect(afterFailedAttempt).toHaveBeenNthCalledWith(2, {
-        error: new Error('Operation timed out'),
-        success: false,
-      });
-      expect(afterFailedAttempt).toHaveBeenNthCalledWith(3, {
-        error: new Error('Full timeout exceeded'),
-        success: false,
-      });
+      expect(afterFailedAttempt).toHaveBeenCalledTimes(2);
+      expect(afterFailedAttempt).toHaveBeenNthCalledWith(1, fail(new Error('Operation timed out')));
+      expect(afterFailedAttempt).toHaveBeenNthCalledWith(2, fail(new Error('Operation timed out')));
+      expect(goRes).toEqual(fail(new Error('Full timeout exceeded')));
     });
   });
 
@@ -698,7 +689,7 @@ describe('afterFailedAttempt', () => {
     const log: string[] = [];
     let counter = 0;
 
-    await go(
+    const goRes = await go(
       async () => {
         counter++;
         const m = 'fail' + counter;
@@ -717,19 +708,17 @@ describe('afterFailedAttempt', () => {
       }
     );
 
+    expect(goRes).toEqual(fail(new Error('fail2')));
     expect(log).toEqual([
       'go callback: fail1',
       'afterFailedAttempt: {"success":false,"error":{}}',
       'go callback: fail2',
-      'afterFailedAttempt: {"success":false,"error":{}}',
     ]);
     await resolveAfter(50); // We need to wait for unfinished afterFailedAttempt callbacks
     expect(log).toEqual([
       'go callback: fail1',
       'afterFailedAttempt: {"success":false,"error":{}}',
       'go callback: fail2',
-      'afterFailedAttempt: {"success":false,"error":{}}',
-      'afterFailedAttempt (after sleep): {"success":false,"error":{}}',
       'afterFailedAttempt (after sleep): {"success":false,"error":{}}',
     ]);
   });
