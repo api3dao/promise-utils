@@ -143,16 +143,15 @@ export const go = async <T, E extends Error>(
 
   const { retries, attemptTimeoutMs, delay, totalTimeoutMs, onAttemptError } = options;
 
-  let fullTimeoutExceededGoResult: GoResult<never, Error> | null = null;
+  let fullTimeoutExceeded = false;
   let totalTimeoutCancellable: CancellableTimeout | null = null;
   let fullTimeoutPromise = new Promise((_resolve) => {}); // Never resolves
   if (totalTimeoutMs !== undefined) {
     // Start a "full" timeout that will stop all retries after it is exceeded
     totalTimeoutCancellable = cancellableSleep(totalTimeoutMs);
     fullTimeoutPromise = totalTimeoutCancellable.promise.then(() => {
-      const goRes = fail(new Error('Full timeout exceeded'));
-      fullTimeoutExceededGoResult = goRes;
-      return goRes;
+      fullTimeoutExceeded = true;
+      return fail(new Error('Full timeout exceeded'));
     });
   }
 
@@ -165,10 +164,10 @@ export const go = async <T, E extends Error>(
       // Return early in case the global timeout has been exceeded during after attempt wait time.
       //
       // This is guaranteed to be false for the first attempt.
-      if (fullTimeoutExceededGoResult) break;
+      if (fullTimeoutExceeded) break;
       const goRes = await attempt<T, E>(fn, attemptTimeoutMs);
       // Return early if the timeout is exceeded not to cause any side effects (such as calling "onAttemptError" function)
-      if (fullTimeoutExceededGoResult) break;
+      if (fullTimeoutExceeded) break;
 
       if (i !== attempts - 1 && !goRes.success && onAttemptError) goSync(() => onAttemptError(goRes));
       if (goRes.success) return goRes;
