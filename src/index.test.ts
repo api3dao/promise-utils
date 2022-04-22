@@ -565,9 +565,9 @@ describe('totalTimeoutMs', () => {
   });
 });
 
-describe('afterFailedAttempt', () => {
+describe('onAttemptError', () => {
   it('calls the function after every unsuccessfull attempt except last', async () => {
-    const afterFailedAttempt = jest.fn();
+    const onAttemptError = jest.fn();
 
     let counter = 0;
     const goRes = await go(
@@ -575,86 +575,86 @@ describe('afterFailedAttempt', () => {
         counter++;
         throw new Error('fail' + counter);
       },
-      { retries: 3, afterFailedAttempt }
+      { retries: 3, onAttemptError }
     );
 
-    expect(afterFailedAttempt).toBeCalledTimes(3);
-    expect(afterFailedAttempt).toHaveBeenNthCalledWith(1, fail(new Error('fail1')));
-    expect(afterFailedAttempt).toHaveBeenNthCalledWith(2, fail(new Error('fail2')));
-    expect(afterFailedAttempt).toHaveBeenNthCalledWith(3, fail(new Error('fail3')));
+    expect(onAttemptError).toBeCalledTimes(3);
+    expect(onAttemptError).toHaveBeenNthCalledWith(1, fail(new Error('fail1')));
+    expect(onAttemptError).toHaveBeenNthCalledWith(2, fail(new Error('fail2')));
+    expect(onAttemptError).toHaveBeenNthCalledWith(3, fail(new Error('fail3')));
     expect(goRes).toEqual(fail(new Error('fail4')));
   });
 
   it('does not trigger the callback after total timeout has been exceeded', async () => {
-    const afterFailedAttempt = jest.fn();
+    const onAttemptError = jest.fn();
 
     const goRes = await go(
       async () => {
         await resolveAfter(50);
       },
-      { retries: 3, totalTimeoutMs: 20, afterFailedAttempt }
+      { retries: 3, totalTimeoutMs: 20, onAttemptError }
     );
 
-    expect(afterFailedAttempt).toHaveBeenCalledTimes(0);
+    expect(onAttemptError).toHaveBeenCalledTimes(0);
     expect(goRes).toEqual(fail(new Error('Full timeout exceeded')));
   });
 
   it('does not call the callback after successful attempt', async () => {
-    const afterFailedAttempt = jest.fn();
+    const onAttemptError = jest.fn();
 
-    await go(async () => Promise.resolve(123), { afterFailedAttempt });
+    await go(async () => Promise.resolve(123), { onAttemptError });
 
-    expect(afterFailedAttempt).toHaveBeenCalledTimes(0);
+    expect(onAttemptError).toHaveBeenCalledTimes(0);
   });
 
   describe('does not call for last unsuccessfull attempt', () => {
     it('and attempt timeout', async () => {
-      const afterFailedAttempt = jest.fn();
+      const onAttemptError = jest.fn();
 
       const goRes = await go(
         async () => {
           await resolveAfter(20);
         },
-        { attemptTimeoutMs: 10, afterFailedAttempt }
+        { attemptTimeoutMs: 10, onAttemptError }
       );
       // Make sure the attempt inside the go function above is completed
       await resolveAfter(30);
 
-      expect(afterFailedAttempt).toHaveBeenCalledTimes(0);
+      expect(onAttemptError).toHaveBeenCalledTimes(0);
       expect(goRes).toEqual(fail(new Error('Operation timed out')));
     });
 
     it('and total timeout', async () => {
-      const afterFailedAttempt = jest.fn();
+      const onAttemptError = jest.fn();
 
       const goRes = await go(
         async () => {
           await resolveAfter(20);
         },
-        { totalTimeoutMs: 10, afterFailedAttempt }
+        { totalTimeoutMs: 10, onAttemptError }
       );
       // Make sure the attempt inside the go function above is completed
       await resolveAfter(30);
 
-      expect(afterFailedAttempt).toHaveBeenCalledTimes(0);
+      expect(onAttemptError).toHaveBeenCalledTimes(0);
       expect(goRes).toEqual(fail(new Error('Full timeout exceeded')));
     });
 
     it('both attemp timeout and total timeout', async () => {
-      const afterFailedAttempt = jest.fn();
+      const onAttemptError = jest.fn();
 
       const goRes = await go(
         async () => {
           await resolveAfter(20);
         },
-        { retries: 2, attemptTimeoutMs: 10, totalTimeoutMs: 25, afterFailedAttempt }
+        { retries: 2, attemptTimeoutMs: 10, totalTimeoutMs: 25, onAttemptError }
       );
       // Make sure the attempt inside the go function above is completed
       await resolveAfter(50);
 
-      expect(afterFailedAttempt).toHaveBeenCalledTimes(2);
-      expect(afterFailedAttempt).toHaveBeenNthCalledWith(1, fail(new Error('Operation timed out')));
-      expect(afterFailedAttempt).toHaveBeenNthCalledWith(2, fail(new Error('Operation timed out')));
+      expect(onAttemptError).toHaveBeenCalledTimes(2);
+      expect(onAttemptError).toHaveBeenNthCalledWith(1, fail(new Error('Operation timed out')));
+      expect(onAttemptError).toHaveBeenNthCalledWith(2, fail(new Error('Operation timed out')));
       expect(goRes).toEqual(fail(new Error('Full timeout exceeded')));
     });
   });
@@ -675,7 +675,7 @@ describe('afterFailedAttempt', () => {
       },
       {
         retries: 3,
-        afterFailedAttempt: (goRes) => {
+        onAttemptError: (goRes) => {
           expect(goRes).toEqual(success(123));
 
           assertGoError(goRes);
@@ -698,28 +698,24 @@ describe('afterFailedAttempt', () => {
       },
       {
         retries: 1,
-        afterFailedAttempt: async (goRes) => {
-          log.push(`afterFailedAttempt: ${JSON.stringify(goRes)}`);
+        onAttemptError: async (goRes) => {
+          log.push(`onAttemptError: ${JSON.stringify(goRes)}`);
 
           await resolveAfter(20);
 
-          log.push(`afterFailedAttempt (after sleep): ${JSON.stringify(goRes)}`);
+          log.push(`onAttemptError (after sleep): ${JSON.stringify(goRes)}`);
         },
       }
     );
 
     expect(goRes).toEqual(fail(new Error('fail2')));
+    expect(log).toEqual(['go callback: fail1', 'onAttemptError: {"success":false,"error":{}}', 'go callback: fail2']);
+    await resolveAfter(50); // We need to wait for unfinished onAttemptError callbacks
     expect(log).toEqual([
       'go callback: fail1',
-      'afterFailedAttempt: {"success":false,"error":{}}',
+      'onAttemptError: {"success":false,"error":{}}',
       'go callback: fail2',
-    ]);
-    await resolveAfter(50); // We need to wait for unfinished afterFailedAttempt callbacks
-    expect(log).toEqual([
-      'go callback: fail1',
-      'afterFailedAttempt: {"success":false,"error":{}}',
-      'go callback: fail2',
-      'afterFailedAttempt (after sleep): {"success":false,"error":{}}',
+      'onAttemptError (after sleep): {"success":false,"error":{}}',
     ]);
   });
 });
