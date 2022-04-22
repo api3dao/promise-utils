@@ -98,7 +98,7 @@ and the following Typescript types:
     attemptTimeoutMs?: number; // The timeout for each attempt.
     totalTimeoutMs?: number; // The maximum timeout for all attempts and delays. No more retries are performed after this timeout.
     delay?: StaticDelayOptions | RandomDelayOptions; // Type of the delay before each attempt. There is no delay before the first request.
-    afterFailedAttempt?: (goRes: GoResultError<E>) => void; // Callback invoked after each failed attempt is completed. This callback does not fire for the last attempt or when a "totalTimeoutMs" is exceeded (these should be handled explicitly with the result of "go" call).
+    onAttemptError?: (goRes: GoResultError<E>) => void; // Callback invoked after each failed attempt is completed. This callback does not fire for the last attempt or when a "totalTimeoutMs" is exceeded (these should be handled explicitly with the result of "go" call).
   }
   ```
 - ```ts

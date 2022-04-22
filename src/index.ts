@@ -19,7 +19,7 @@ export interface GoAsyncOptions<E extends Error = Error> {
   attemptTimeoutMs?: number; // The timeout for each attempt.
   totalTimeoutMs?: number; // The maximum timeout for all attempts and delays. No more retries are performed after this timeout.
   delay?: StaticDelayOptions | RandomDelayOptions; // Type of the delay before each attempt. There is no delay before the first request.
-  afterFailedAttempt?: (goRes: GoResultError<E>) => void; // Callback invoked after each failed attempt is completed. This callback does not fire for the last attempt or when a "totalTimeoutMs" is exceeded (these should be handled explicitly with the result of "go" call).
+  onAttemptError?: (goRes: GoResultError<E>) => void; // Callback invoked after each failed attempt is completed. This callback does not fire for the last attempt or when a "totalTimeoutMs" is exceeded (these should be handled explicitly with the result of "go" call).
 }
 
 export class GoWrappedError extends Error {
@@ -141,7 +141,7 @@ export const go = async <T, E extends Error>(
 ): Promise<GoResult<T, E>> => {
   if (!options) return attempt(fn);
 
-  const { retries, attemptTimeoutMs, delay, totalTimeoutMs, afterFailedAttempt } = options;
+  const { retries, attemptTimeoutMs, delay, totalTimeoutMs, onAttemptError } = options;
 
   let fullTimeoutExceededGoResult: GoResult<never, Error> | null = null;
   let totalTimeoutCancellable: CancellableTimeout | null = null;
@@ -167,10 +167,10 @@ export const go = async <T, E extends Error>(
       // This is guaranteed to be false for the first attempt.
       if (fullTimeoutExceededGoResult) break;
       const goRes = await attempt<T, E>(fn, attemptTimeoutMs);
-      // Return early if the timeout is exceeded not to cause any side effects (such as calling "afterFailedAttempt" function)
+      // Return early if the timeout is exceeded not to cause any side effects (such as calling "onAttemptError" function)
       if (fullTimeoutExceededGoResult) break;
 
-      if (i !== attempts - 1 && !goRes.success && afterFailedAttempt) goSync(() => afterFailedAttempt(goRes));
+      if (i !== attempts - 1 && !goRes.success && onAttemptError) goSync(() => onAttemptError(goRes));
       if (goRes.success) return goRes;
 
       lastFailedAttemptResult = goRes;
