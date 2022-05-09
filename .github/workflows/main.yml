@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x]
+        node-version: [14.x, 16.x, 18.x]
     name: Build (${{ matrix.node-version }})
     steps:
       - name: Clone @api3/promise-utils
@@ -44,3 +44,4 @@ jobs:
     needs: [lint-test]
     steps:
       - run: exit 0
+
