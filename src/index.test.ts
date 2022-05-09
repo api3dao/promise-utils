@@ -302,7 +302,9 @@ describe('the "this" limitation', () => {
 
   // The error message for when reading a property of undefined has changed between major node versions
   const expectReadPropertyOfUndefined = (res: unknown, prop: string) => {
-    if (process.version.startsWith('v16')) {
+    // process.version returns the version as the string: 'v[major].[minor].[patch]'
+    const majorVersion = process.version.split('.')[0]!.substring(1);
+    if (Number(majorVersion) >= 16) {
       expect(res).toEqual(fail(new TypeError(`Cannot read properties of undefined (reading '${prop}')`)));
     } else {
       expect(res).toEqual(fail(new TypeError(`Cannot read property '${prop}' of undefined`)));
