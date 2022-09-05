@@ -2263,23 +2263,28 @@ type-fest@^0.21.3:
   resolved "https://registry.yarnpkg.com/type-fest/-/type-fest-0.21.3.tgz#d260a24b0198436e133fa26a524a6d65fa3b2e37"
   integrity sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==
 
-type-plus@^4.11.1:
-  version "4.11.1"
-  resolved "https://registry.yarnpkg.com/type-plus/-/type-plus-4.11.1.tgz#83c30f76c715e7170f5ec45444402c74f25bbc1e"
-  integrity sha512-i/Q45slBZzQraXRTOc9aEfYIDW28BxiH7v0FtTUa7nXIe4Lotu9eDIJ4I/21gmkf/C0EPCNxxUiIB207z+Xyww==
+type-plus@^4.11.2:
+  version "4.11.2"
+  resolved "https://registry.yarnpkg.com/type-plus/-/type-plus-4.11.2.tgz#0aea22cb98d2b0c7fe14b3b5946243a11e71bf1d"
+  integrity sha512-aR687KNF16JI+nKM/K+Ee+NXNR1LxfEelfQW4tsUsRj1T+sKAVPL5feEZQ8HRbQiQshg5dehV2XQNjAfejo2jg==
   dependencies:
     tersify "^3.10.2"
-    unpartial "^0.7.5"
+    unpartial "^1.0.1"
 
 typescript@^4.8.2:
   version "4.8.2"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.8.2.tgz#e3b33d5ccfb5914e4eeab6699cf208adee3fd790"
   integrity sha512-C0I1UsrrDHo2fYI5oaCGbSejwX4ch+9Y5jTQELvovfmFkK3HHSZJB8MSJcWLmCUBzQBchCrZ9rMRV6GuNrvGtw==
 
-unpartial@^0.7.4, unpartial@^0.7.5:
+unpartial@^0.7.4:
   version "0.7.5"
   resolved "https://registry.yarnpkg.com/unpartial/-/unpartial-0.7.5.tgz#68393e88f4e4d6ac2f622a18dfc9e495a32ab910"
   integrity sha512-02G/AkbF7MkgaEOAJmCe7P0UYzJVkMkAIU5YEJsO5QmDX7vkqyNctVi1gPm8YLVlGo5T/Qe/hYA66AuliEKBag==
+
+unpartial@^1.0.1:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/unpartial/-/unpartial-1.0.2.tgz#f925a6013a70831fe6d2d5dea7300fd6ca1b3637"
+  integrity sha512-BhtFRJKwDMB6xuuvz3WTYYS2Lb6uOKPTAwOyDe61+L8Gk1oSAhyOjpwhrjGgT/ilo2rPO1+7eAjLWC04iWBhRQ==
 
 v8-to-istanbul@^9.0.1:
   version "9.0.1"
