@@ -1,6 +1,6 @@
 // NOTE: We use discriminated unions over "success" property
-export type GoResultSuccess<T> = { data: T; success: true };
-export type GoResultError<E extends Error = Error> = { error: E; success: false };
+export type GoResultSuccess<T> = { data: T; success: true; error: undefined };
+export type GoResultError<E extends Error = Error> = { data: undefined; error: E; success: false };
 export type GoResult<T, E extends Error = Error> = GoResultSuccess<T> | GoResultError<E>;
 
 export interface StaticDelayOptions {
@@ -45,13 +45,13 @@ export function assertGoError<E extends Error>(result: GoResult<any, E>): assert
 }
 
 export const success = <T>(value: T): GoResultSuccess<T> => {
-  return { success: true, data: value };
+  return { success: true, data: value, error: undefined };
 };
 
 // We allow the consumer to type which error is returned. The "err" parameter has weaker type ("Error") to accommodate
 // for a generic error thrown by the go functions.
 export const fail = <E extends Error>(err: Error): GoResultError<E> => {
-  return { success: false, error: err as E };
+  return { success: false, data: undefined, error: err as E };
 };
 
 const createGoError = <E extends Error>(err: unknown): GoResultError<E> => {
@@ -63,7 +63,7 @@ export const goSync = <T, E extends Error>(fn: () => T): GoResult<T, E> => {
   try {
     return success(fn());
   } catch (err) {
-    return createGoError(err);
+    return createGoError(err) as GoResultError<E>;
   }
 };
 
@@ -131,7 +131,7 @@ const attempt = async <T, E extends Error>(
     if (timeout?.cancel) {
       timeout.cancel();
     }
-    return createGoError(err);
+    return createGoError(err) as GoResultError<E>;
   }
 };
 

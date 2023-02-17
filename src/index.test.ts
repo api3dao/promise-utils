@@ -729,4 +729,20 @@ describe('onAttemptError', () => {
 
     assertType<string>(goRes.data);
   });
+
+  it('allows you to access both error and success properties', async () => {
+    const { success, error, data } = goSync(() => 123);
+    // @ts-expect-error should not work
+    const x: number = data;
+    assertType<number | undefined>(data);
+    assertType<Error | undefined>(error);
+
+    if (success) {
+      assertType<number>(data);
+      assertType<undefined>(error);
+    } else {
+      assertType<undefined>(data);
+      assertType<Error>(error);
+    }
+  });
 });
