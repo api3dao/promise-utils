@@ -173,7 +173,7 @@ export const go = async <T, E extends Error>(
       if (goRes.success) return goRes;
 
       lastFailedAttemptResult = goRes;
-      if (delay) {
+      if (delay && i !== attempts - 1) {
         switch (delay.type) {
           case 'random': {
             const { minDelayMs, maxDelayMs } = delay;
