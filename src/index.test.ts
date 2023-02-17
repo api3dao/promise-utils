@@ -745,4 +745,12 @@ describe('onAttemptError', () => {
       assertType<Error>(error);
     }
   });
+
+  it('does not delay after last attempt', async () => {
+    const start = performance.now();
+
+    await go(() => Promise.reject('error'), { delay: { type: 'static', delayMs: 100 }, retries: 2 });
+
+    expect(performance.now() - start).toBeLessThan(2 * 100 + 50);
+  });
 });
