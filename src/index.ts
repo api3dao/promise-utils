@@ -113,9 +113,9 @@ const cancellableTimeout = (ms: number): CancellableTimeout => {
 };
 
 const attempt = async <T, E extends Error>(
-  fn: () => Promise<T>,
+  fn: () => T,
   attemptTimeoutMs?: number
-): Promise<GoResult<T, E>> => {
+): Promise<GoResult<Awaited<T>, E>> => {
   let timeout: CancellableTimeout | null = null;
 
   // We need try/catch because `fn` might throw sync errors as well
@@ -136,9 +136,9 @@ const attempt = async <T, E extends Error>(
 };
 
 export const go = async <T, E extends Error>(
-  fn: () => Promise<T>,
+  fn: () => T,
   options?: GoAsyncOptions<E>
-): Promise<GoResult<T, E>> => {
+): Promise<GoResult<Awaited<T>, E>> => {
   if (!options) return attempt(fn);
 
   const { retries, attemptTimeoutMs, delay, totalTimeoutMs, onAttemptError } = options;
@@ -198,5 +198,5 @@ export const go = async <T, E extends Error>(
   if (totalTimeoutCancellable?.cancel) totalTimeoutCancellable.cancel();
   if (delayCancellable?.cancel) delayCancellable.cancel();
 
-  return result as Promise<GoResult<T, E>>;
+  return result as Promise<GoResult<Awaited<T>, E>>;
 };
