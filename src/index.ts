@@ -16,7 +16,7 @@ export interface RandomDelayOptions {
 
 export interface GoAsyncOptions<E extends Error = Error> {
   retries?: number; // Number of retries to attempt if the go callback is unsuccessful.
-  attemptTimeoutMs?: number; // The timeout for each attempt.
+  attemptTimeoutMs?: number | number[]; // The timeout for each attempt.
   totalTimeoutMs?: number; // The maximum timeout for all attempts and delays. No more retries are performed after this timeout.
   delay?: StaticDelayOptions | RandomDelayOptions; // Type of the delay before each attempt. There is no delay before the first request.
   onAttemptError?: (goRes: GoResultError<E>) => void; // Callback invoked after each failed attempt is completed. This callback does not fire for the last attempt or when a "totalTimeoutMs" is exceeded (these should be handled explicitly with the result of "go" call).
@@ -161,11 +161,17 @@ export const go = async <T, E extends Error>(
     const attempts = retries ? retries + 1 : 1;
     let lastFailedAttemptResult: GoResultError<E> | null = null;
     for (let i = 0; i < attempts; i++) {
+      // if array of timeouts is provided, use the current one, otherwise use the default one
+      const currentAttemptTimeoutMs = Array.isArray(attemptTimeoutMs)
+        ? i < attemptTimeoutMs.length
+          ? attemptTimeoutMs[i]
+          : attemptTimeoutMs[0]
+        : attemptTimeoutMs;
       // Return early in case the global timeout has been exceeded during after attempt wait time.
       //
       // This is guaranteed to be false for the first attempt.
       if (fullTimeoutExceeded) break;
-      const goRes = await attempt<T, E>(fn, attemptTimeoutMs);
+      const goRes = await attempt<T, E>(fn, currentAttemptTimeoutMs);
       // Return early if the timeout is exceeded not to cause any side effects (such as calling "onAttemptError" function)
       if (fullTimeoutExceeded) break;
 
