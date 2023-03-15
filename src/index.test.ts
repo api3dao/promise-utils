@@ -198,6 +198,15 @@ describe('basic retry and timeout usage', () => {
     const attempts = 3;
     jest.spyOn(operations, 'successFn');
 
+    const res = await go(operations.successFn, { attemptTimeoutMs: 5, retries: 2 });
+    expect(operations.successFn).toHaveBeenCalledTimes(attempts);
+    expect(res).toEqual(fail(new Error('Operation timed out')));
+  });
+
+  it('retries with multiple timeout durations and resolves unsuccessful timed out functions', async () => {
+    const attempts = 3;
+    jest.spyOn(operations, 'successFn');
+
     const res = await go(operations.successFn, { attemptTimeoutMs: [5, 10, 15], retries: 2 });
     expect(operations.successFn).toHaveBeenCalledTimes(attempts);
     expect(res).toEqual(fail(new Error('Operation timed out')));

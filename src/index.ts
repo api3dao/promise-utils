@@ -161,12 +161,19 @@ export const go = async <T, E extends Error>(
     const attempts = retries ? retries + 1 : 1;
     let lastFailedAttemptResult: GoResultError<E> | null = null;
     for (let i = 0; i < attempts; i++) {
-      // if array of timeouts is provided, use the current one, otherwise use the default one
-      const currentAttemptTimeoutMs = Array.isArray(attemptTimeoutMs)
-        ? i < attemptTimeoutMs.length
-          ? attemptTimeoutMs[i]
-          : attemptTimeoutMs[0]
-        : attemptTimeoutMs;
+      // if array of timeouts is provided, use the timeout at the current index,
+      // or the last one if the index is out of bounds
+      // if a single timeout is provided, use it for all attempts
+      let currentAttemptTimeoutMs: number | undefined;
+      if (Array.isArray(attemptTimeoutMs)) {
+        if (i < attemptTimeoutMs.length) {
+          currentAttemptTimeoutMs = attemptTimeoutMs[i];
+        } else {
+          currentAttemptTimeoutMs = attemptTimeoutMs[attemptTimeoutMs.length - 1];
+        }
+      } else {
+        currentAttemptTimeoutMs = attemptTimeoutMs;
+      }
       // Return early in case the global timeout has been exceeded during after attempt wait time.
       //
       // This is guaranteed to be false for the first attempt.
