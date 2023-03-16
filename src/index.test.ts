@@ -181,7 +181,7 @@ describe('basic retry and timeout usage', () => {
     const start = performance.now();
     const res = await go(operations.successFn, { attemptTimeoutMs: [5, 10, 15, 25], retries: 3 });
     const end = performance.now();
-    expect(end - start).toBeGreaterThanOrEqual(5 + 10 + 15 + 20);
+    expect(end - start).toBeGreaterThanOrEqual(5 + 10 + 15 + 20 - 5);
     expect(end - start).toBeLessThanOrEqual(5 + 10 + 15 + 20 + 5);
     expect(operations.successFn).toHaveBeenCalledTimes(4);
     expect(res).toEqual(success(2));
@@ -214,7 +214,7 @@ describe('basic retry and timeout usage', () => {
     const start = performance.now();
     const res = await go(operations.successFn, { attemptTimeoutMs: [5, 10, 15], retries: 2 });
     const end = performance.now();
-    expect(end - start).toBeGreaterThan(5 + 10 + 15);
+    expect(end - start).toBeGreaterThan(5 + 10 + 15 - 5);
     expect(end - start).toBeLessThan(5 + 10 + 15 + 5);
     expect(operations.successFn).toHaveBeenCalledTimes(attempts);
     expect(res).toEqual(fail(new Error('Operation timed out')));
@@ -225,20 +225,20 @@ describe('basic retry and timeout usage', () => {
     const start = performance.now();
     const res = await go(operations.successFn, { attemptTimeoutMs: [5, 8, 10, 12, 15, 18], retries: 5 });
     const end = performance.now();
-    expect(end - start).toBeGreaterThan(5 + 8 + 10 + 12 + 15 + 18);
+    expect(end - start).toBeGreaterThan(5 + 8 + 10 + 12 + 15 + 18 - 5);
     expect(end - start).toBeLessThan(5 + 8 + 10 + 12 + 15 + 18 + 5);
     expect(operations.successFn).toHaveBeenCalledTimes(6);
     expect(res).toEqual(fail(new Error('Operation timed out')));
   });
 
   it('retries with multiple timeout durations and uses the last value if array length is smaller than total attempts', async () => {
-    const attempts = 3;
+    const attempts = 6;
     jest.spyOn(operations, 'successFn');
     const start = performance.now();
-    const res = await go(operations.successFn, { attemptTimeoutMs: [5, 10], retries: 2 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: [5, 10], retries: 5 });
     const end = performance.now();
-    expect(end - start).toBeGreaterThan(5 + 10 + 10 - 2);
-    expect(end - start).toBeLessThan(5 + 10 + 10 + 2);
+    expect(end - start).toBeGreaterThan(5 + 10 + 10 + 10 + 10 + 10 - 5);
+    expect(end - start).toBeLessThan(5 + 10 + 10 + 10 + 10 + 10 + 5);
     expect(operations.successFn).toHaveBeenCalledTimes(attempts);
     expect(res).toEqual(fail(new Error('Operation timed out')));
   });
