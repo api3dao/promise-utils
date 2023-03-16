@@ -166,7 +166,7 @@ export const go = async <T, E extends Error>(
       // if a single timeout is provided, use it for all attempts
       let currentAttemptTimeoutMs: number | undefined;
       if (Array.isArray(attemptTimeoutMs)) {
-        currentAttemptTimeoutMs = attemptTimeoutMs[i] || attemptTimeoutMs[attemptTimeoutMs.length - 1];
+        currentAttemptTimeoutMs = attemptTimeoutMs[i] || attemptTimeoutMs.at(-1);
       } else {
         currentAttemptTimeoutMs = attemptTimeoutMs;
       }

@@ -151,17 +151,17 @@ describe('basic timeout usage', () => {
 
 describe('basic retry and timeout usage', () => {
   const operations = {
-    successFn: () => resolveAfter(20, 2),
-    errorFn: () => rejectAfter(20, new Error('Computer says no')),
+    successFn: () => resolveAfter(100, 2),
+    errorFn: () => rejectAfter(100, new Error('Computer says no')),
   };
 
   it('resolves successful asynchronous functions', async () => {
-    const res = await go(operations.successFn, { attemptTimeoutMs: 50, retries: 3 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: 120, retries: 3 });
     expect(res).toEqual(success(2));
   });
 
   it('resolves unsuccessful asynchronous functions', async () => {
-    const res = await go(operations.errorFn, { attemptTimeoutMs: 50, retries: 3 });
+    const res = await go(operations.errorFn, { attemptTimeoutMs: 120, retries: 3 });
     expect(res).toEqual(fail(new Error('Computer says no')));
   });
 
@@ -171,7 +171,7 @@ describe('basic retry and timeout usage', () => {
       .mockRejectedValueOnce(new Error('Error 1'))
       .mockRejectedValueOnce(new Error('Error 2'));
 
-    const res = await go(operations.successFn, { attemptTimeoutMs: 100, retries: 3 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: 120, retries: 3 });
     expect(operations.successFn).toHaveBeenCalledTimes(3);
     expect(res).toEqual(success(2));
   });
@@ -179,10 +179,9 @@ describe('basic retry and timeout usage', () => {
   it('retries and resolves successful asynchronous functions with varying timeouts', async () => {
     jest.spyOn(operations, 'successFn');
     const start = performance.now();
-    const res = await go(operations.successFn, { attemptTimeoutMs: [5, 10, 15, 25], retries: 3 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: [50, 70, 90, 120], retries: 3 });
     const end = performance.now();
-    expect(end - start).toBeGreaterThanOrEqual(5 + 10 + 15 + 20 - 5);
-    expect(end - start).toBeLessThanOrEqual(5 + 10 + 15 + 20 + 5);
+    expectToBeAround(end - start, 50 + 70 + 90 + 100);
     expect(operations.successFn).toHaveBeenCalledTimes(4);
     expect(res).toEqual(success(2));
   });
@@ -193,7 +192,7 @@ describe('basic retry and timeout usage', () => {
       .mockRejectedValueOnce(new Error('Error 1'))
       .mockRejectedValueOnce(new Error('Error 2'));
 
-    const res = await go(operations.errorFn, { attemptTimeoutMs: 100, retries: 2 });
+    const res = await go(operations.errorFn, { attemptTimeoutMs: 120, retries: 2 });
     expect(operations.errorFn).toHaveBeenCalledTimes(3);
     expect(res).toEqual(fail(new Error('Computer says no')));
   });
@@ -202,7 +201,7 @@ describe('basic retry and timeout usage', () => {
     const attempts = 3;
     jest.spyOn(operations, 'successFn');
 
-    const res = await go(operations.successFn, { attemptTimeoutMs: 5, retries: 2 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: 50, retries: 2 });
     expect(operations.successFn).toHaveBeenCalledTimes(attempts);
     expect(res).toEqual(fail(new Error('Operation timed out')));
   });
@@ -212,10 +211,9 @@ describe('basic retry and timeout usage', () => {
     jest.spyOn(operations, 'successFn');
 
     const start = performance.now();
-    const res = await go(operations.successFn, { attemptTimeoutMs: [5, 10, 15], retries: 2 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: [50, 70, 90], retries: 2 });
     const end = performance.now();
-    expect(end - start).toBeGreaterThan(5 + 10 + 15 - 5);
-    expect(end - start).toBeLessThan(5 + 10 + 15 + 5);
+    expectToBeAround(end - start, 50 + 70 + 90);
     expect(operations.successFn).toHaveBeenCalledTimes(attempts);
     expect(res).toEqual(fail(new Error('Operation timed out')));
   });
@@ -223,10 +221,9 @@ describe('basic retry and timeout usage', () => {
   it('retries and timeouts within the timeout limit of each attempt', async () => {
     jest.spyOn(operations, 'successFn');
     const start = performance.now();
-    const res = await go(operations.successFn, { attemptTimeoutMs: [5, 8, 10, 12, 15, 18], retries: 5 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: [50, 60, 70, 80, 90, 95], retries: 5 });
     const end = performance.now();
-    expect(end - start).toBeGreaterThan(5 + 8 + 10 + 12 + 15 + 18 - 5);
-    expect(end - start).toBeLessThan(5 + 8 + 10 + 12 + 15 + 18 + 5);
+    expectToBeAround(end - start, 50 + 60 + 70 + 80 + 90 + 95);
     expect(operations.successFn).toHaveBeenCalledTimes(6);
     expect(res).toEqual(fail(new Error('Operation timed out')));
   });
@@ -235,10 +232,9 @@ describe('basic retry and timeout usage', () => {
     const attempts = 6;
     jest.spyOn(operations, 'successFn');
     const start = performance.now();
-    const res = await go(operations.successFn, { attemptTimeoutMs: [5, 10], retries: 5 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: [50, 70], retries: 5 });
     const end = performance.now();
-    expect(end - start).toBeGreaterThan(5 + 10 + 10 + 10 + 10 + 10 - 5);
-    expect(end - start).toBeLessThan(5 + 10 + 10 + 10 + 10 + 10 + 5);
+    expectToBeAround(end - start, 50 + 70 + 70 + 70 + 70 + 70);
     expect(operations.successFn).toHaveBeenCalledTimes(attempts);
     expect(res).toEqual(fail(new Error('Operation timed out')));
   });
