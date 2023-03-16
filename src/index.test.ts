@@ -181,8 +181,8 @@ describe('basic retry and timeout usage', () => {
     const start = performance.now();
     const res = await go(operations.successFn, { attemptTimeoutMs: [5, 10, 15, 25], retries: 3 });
     const end = performance.now();
-    expect(end - start).toBeGreaterThanOrEqual(5 + 10 + 15 + 20 - 2);
-    expect(end - start).toBeLessThanOrEqual(5 + 10 + 15 + 20 + 2);
+    expect(end - start).toBeGreaterThanOrEqual(5 + 10 + 15 + 20);
+    expect(end - start).toBeLessThanOrEqual(5 + 10 + 15 + 20 + 5);
     expect(operations.successFn).toHaveBeenCalledTimes(4);
     expect(res).toEqual(success(2));
   });
@@ -214,22 +214,20 @@ describe('basic retry and timeout usage', () => {
     const start = performance.now();
     const res = await go(operations.successFn, { attemptTimeoutMs: [5, 10, 15], retries: 2 });
     const end = performance.now();
-    expect(end - start).toBeGreaterThan(5 + 10 + 15 - 2);
-    expect(end - start).toBeLessThan(5 + 10 + 15 + 2);
+    expect(end - start).toBeGreaterThan(5 + 10 + 15);
+    expect(end - start).toBeLessThan(5 + 10 + 15 + 5);
     expect(operations.successFn).toHaveBeenCalledTimes(attempts);
     expect(res).toEqual(fail(new Error('Operation timed out')));
   });
 
   it('retries and timeouts within the timeout limit of each attempt', async () => {
-    const attempts = 3;
     jest.spyOn(operations, 'successFn');
-
     const start = performance.now();
-    const res = await go(operations.successFn, { attemptTimeoutMs: [5, 10, 15], retries: 2 });
+    const res = await go(operations.successFn, { attemptTimeoutMs: [5, 8, 10, 12, 15, 18], retries: 5 });
     const end = performance.now();
-    expect(end - start).toBeGreaterThan(5 + 10 + 15 - 2);
-    expect(end - start).toBeLessThan(5 + 10 + 15 + 2);
-    expect(operations.successFn).toHaveBeenCalledTimes(attempts);
+    expect(end - start).toBeGreaterThan(5 + 8 + 10 + 12 + 15 + 18);
+    expect(end - start).toBeLessThan(5 + 8 + 10 + 12 + 15 + 18 + 5);
+    expect(operations.successFn).toHaveBeenCalledTimes(6);
     expect(res).toEqual(fail(new Error('Operation timed out')));
   });
 
