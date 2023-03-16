@@ -1,6 +1,5 @@
 import { go, goSync, success, fail, assertGoSuccess, assertGoError, GoWrappedError } from './index';
 import { assertType, Equal } from 'type-plus';
-import { performance } from 'perf_hooks';
 
 const expectToBeAround = (actual: number, expected: number, range = 10) => {
   expect(actual).toBeGreaterThanOrEqual(expected - range);
