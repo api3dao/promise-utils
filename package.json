@@ -32,7 +32,7 @@
     "prettier": "^3.4.2",
     "ts-jest": "^28.0.8",
     "type-plus": "^7.6.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.3"
   },
   "dependencies": {}
 }
