@@ -6,7 +6,7 @@
 
 To install this package run either:
 
-`yarn add @api3/promise-utils`
+`pnpm add @api3/promise-utils`
 
 or if you use npm:
 
@@ -201,7 +201,7 @@ inside the `get` function is `undefined` which makes the `this._get()` throw an 
 
 To release a new version follow these steps:
 
-1. `yarn && yarn build`
-2. `yarn version` and choose the version to be released
-3. `yarn publish --access public`
+1. `pnpm && pnpm build`
+2. `pnpm version` and choose the version to be released
+3. `pnpm publish --access public`
 4. `git push --follow-tags`
