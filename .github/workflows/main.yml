@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [20.x, 22.x]
     name: Build (${{ matrix.node-version }})
     steps:
       - name: Clone @api3/promise-utils
