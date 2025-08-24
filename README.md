@@ -152,8 +152,7 @@ either:
 
 1. Have them in a same try catch block - but then it's difficult to differentiate between what error has been thrown.
    Also this usually leads to a lot of code inside a try block and the catch clause acts more like "catch anything".
-2. Use nested try catch blocks - but this hurts readability and forces you into the
-   [callback hell pattern](http://callbackhell.com/).
+2. Use nested try catch blocks - but this hurts readability and forces you into the callback hell pattern.
 
 ### Consistent throwing of an `Error` instance
 
