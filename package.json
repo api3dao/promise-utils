@@ -10,6 +10,10 @@
     "build",
     "src"
   ],
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "pnpm": "^10.33.0"
+  },
   "scripts": {
     "build:cjs": "pnpm tsc -p tsconfig.build-cjs.json",
     "build:es6": "pnpm tsc -p tsconfig.build-es6.json",
