@@ -1,5 +1,30 @@
 # promise-utils [![ContinuousBuild](https://github.com/api3dao/promise-utils/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/api3dao/promise-utils/actions/workflows/main.yml)
 
+> **⚠️ DEPRECATED — this package has moved to [`@api3/commons`](https://github.com/api3dao/commons)**
+>
+> This repository is archived and no longer maintained. The code now lives in the
+> [`promise-utils` module](https://github.com/api3dao/commons/blob/main/src/promise-utils/README.md) of
+> [`@api3/commons`](https://github.com/api3dao/commons), which is where all future fixes and features go.
+>
+> `@api3/promise-utils@0.4.0` remains published on npm so existing projects keep working, but it will receive no further
+> releases.
+>
+> **Migration:** the API is unchanged, so only the import changes.
+>
+> ```sh
+> pnpm remove @api3/promise-utils && pnpm add @api3/commons
+> ```
+>
+> ```diff
+> - import { go, goSync } from '@api3/promise-utils';
+> + import { go, goSync } from '@api3/commons';
+> ```
+>
+> `promise-utils` is part of the universal entrypoint of `@api3/commons`, so it remains usable in both Node.js and
+> browser environments.
+
+---
+
 > A simple package for a functional and typesafe error handling with zero dependencies
 
 ## Installation
